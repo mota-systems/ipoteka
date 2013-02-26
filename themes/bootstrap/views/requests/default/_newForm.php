@@ -94,7 +94,7 @@
 <!--    --><?//=CHtml::ajaxSubmitButton('Сделать запрос', array('checkFilters'), array('update' => '#result'), array('id' => 'sendRequest', 'style' => 'display:none'))?>
     <? $this->widget('bootstrap.widgets.TbButton', array(
     'buttonType' => 'ajaxSubmit',
-    'url'=>''
+    'url'=>'',
     'label' => 'Сделать запрос',
     'ajaxOptions' => array(
         'update' => '#result'

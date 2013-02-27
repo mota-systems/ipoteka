@@ -20,6 +20,7 @@ return array(
         'application.components.*',
         'application.components.behaviors.*',
         'application.components.validators.*',
+        'application.components.widgets.*',
         'bootstrap.widgets.*',
         'bootstrap.widgets.input.*',
     ),

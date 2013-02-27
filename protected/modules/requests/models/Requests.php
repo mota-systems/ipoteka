@@ -54,8 +54,12 @@ class Requests extends CActiveRecord
                 'class' => 'application.components.behaviors.AuthorBehavior',
                 'authorAttribute' => 'created_by_user_id',
             ),
+            'AutoDateTimeFormatter'=>array(
+                'class'=>'application.components.behaviors.DateTimeFormatterBehavior'
+            ),
         );
     }
+
 
 
     public static function getNameByType($sex)
@@ -158,7 +162,6 @@ class Requests extends CActiveRecord
         // should not be searched.
 
         $criteria = new CDbCriteria;
-
         $criteria->compare('id', $this->id);
         $criteria->compare('surname', $this->surname, TRUE);
         $criteria->compare('patronymic', $this->patronymic, TRUE);

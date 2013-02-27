@@ -1,21 +1,23 @@
 <?php
 /* @var $this RequestsController */
 /* @var $model Requests */
-/* @var $form CActiveForm */
+/* @var $form TbActiveForm */
 ?>
 
 <div class="form">
 
-    <?php $form = $this->beginWidget('CActiveForm', array(
-    'id' => 'requests-form',
-    'enableAjaxValidation' => TRUE,
-    'clientOptions' => array(
-        'validateOnChange' => TRUE,
-        'validateOnSubmit' => TRUE,
+    <?php $form = $this->beginWidget('bootstrap.widgets.TbActiveForm', array(
+    'id'                     => 'requests-form',
+    'enableAjaxValidation'   => TRUE,
+    'type'                   => 'horizontal',
+    'enableClientValidation' => FALSE,
+    'inlineErrors'           => TRUE,
+    'clientOptions'          => array(
+        'validateOnChange'       => TRUE,
+        'validateOnSubmit'       => TRUE,
         'afterValidateAttribute' => 'js:function(form, attribute, data, hasError) {
-               console.log("inouted");
                var form_success = false;
-               $("#requests-form div.row").each(function(i,o){
+               $("#requests-form div.control-group").each(function(i,o){
                     $(this).hasClass(\'success\') ? form_success = true : form_success = false;
                });
                if(form_success) {
@@ -23,86 +25,96 @@
                } else {
                      $(\'#sendRequest\').hide();
                }
-        }',)
+        }',
+       /* 'beforeValidateAttribute' => 'js:function(form, attribute) {
+               $(\'#sendRequest\').hide();
+               $(\'#result\').hide();
+        }',*/
+    )
 //    'enableClientValidation'=>true,
 )); ?>
 
-    <p class="note">Fields with <span class="required">*</span> are required.</p>
+    <p class="note">Поля, отмеченные <span class="required">*</span> обязательны для заполнения.</p>
 
     <?php echo $form->errorSummary($model); ?>
 
-    <div class="row">
-        <?php echo $form->labelEx($model, 'surname'); ?>
-        <?php echo $form->textField($model, 'surname', array('size' => 60, 'maxlength' => 100)); ?>
+    <div class="control-group">
+        <!--        --><?php //echo $form->labelEx($model, 'surname'); ?>
+        <?php echo $form->textFieldRow($model, 'surname', array('size' => 60, 'maxlength' => 100)); ?>
         <?php echo $form->error($model, 'surname'); ?>
     </div>
 
-    <div class="row">
-        <?php echo $form->labelEx($model, 'name'); ?>
-        <?php echo $form->textField($model, 'name', array('size' => 60, 'maxlength' => 100)); ?>
+    <div class="control-group">
+        <!--        --><?php //echo $form->labelEx($model, 'name'); ?>
+        <?php echo $form->textFieldRow($model, 'name', array('size' => 60, 'maxlength' => 100)); ?>
         <?php echo $form->error($model, 'name'); ?>
     </div>
 
-    <div class="row">
-        <?php echo $form->labelEx($model, 'patronymic'); ?>
-        <?php echo $form->textField($model, 'patronymic', array('size' => 60, 'maxlength' => 100)); ?>
+    <div class="control-group">
+        <!--        --><?php //echo $form->labelEx($model, 'patronymic'); ?>
+        <?php echo $form->textFieldRow($model, 'patronymic', array('size' => 60, 'maxlength' => 100)); ?>
         <?php echo $form->error($model, 'patronymic'); ?>
     </div>
-    <div class="row">
-        <?php echo $form->labelEx($model, 'sex'); ?>
-        <?php echo $form->dropDownList($model, 'sex', array(Requests::SEX_MAN => 'Мужчина', Requests::SEX_WOMEN => 'Женщина')); ?>
+    <div class="control-group">
+        <!--        --><?php //echo $form->labelEx($model, 'sex'); ?>
+        <?php echo $form->dropDownListRow($model, 'sex', array(Requests::SEX_MAN => 'Мужчина', Requests::SEX_WOMEN => 'Женщина')); ?>
         <?php echo $form->error($model, 'sex'); ?>
     </div>
 
-    <div class="row">
-        <?php echo $form->labelEx($model, 'summ'); ?>
-        <? echo $form->textArea($model, 'summ', array('size' => 60, 'maxlength' => 100))?>
+    <div class="control-group">
+        <!--        --><?php //echo $form->labelEx($model, 'summ'); ?>
+        <? echo $form->textFieldRow($model, 'summ', array('size' => 60, 'maxlength' => 100))?>
         <?php echo $form->error($model, 'summ'); ?>
     </div>
 
-    <div class="row">
-        <?php echo $form->labelEx($model, 'initialFee'); ?>
-        <? echo $form->textArea($model, 'initialFee', array('size' => 60, 'maxlength' => 100))?>
+    <div class="control-group">
+        <!--        --><?php //echo $form->labelEx($model, 'initialFee'); ?>
+        <? echo $form->textFieldRow($model, 'initialFee', array('size' => 60, 'maxlength' => 100))?>
         <?php echo $form->error($model, 'initialFee'); ?>
     </div>
 
-    <div class="row">
-        <?php echo $form->labelEx($model, 'objectTypeId'); ?>
-        <? echo $form->dropDownList($model, 'objectTypeId', ObjectType::getAllInArray())?>
+    <div class="control-group">
+        <? echo $form->dropDownListRow($model, 'objectTypeId', ObjectType::getAllInArray())?>
         <?php echo $form->error($model, 'objectTypeId'); ?>
     </div>
 
-    <div class="row">
-        <?php echo $form->labelEx($model, 'birthday'); ?>
+    <div class="control-group">
+        <?php echo $form->labelEx($model, 'birthday', array('class' => 'control-label')); ?>
         <?php echo $this->widget('zii.widgets.jui.CJuiDatePicker', array(
-        'model' => $model,
-        'attribute' => 'birthday',
-        'language' => 'ru',
-        'options' => array(
-            'showAnim' => 'fold',
-            'dateFormat' => 'yy-mm-dd',
-            'changeMonth' => 'true',
-            'changeYear' => 'true',
+        'model'       => $model,
+        'attribute'   => 'birthday',
+        'value'       => CTimestamp::formatDate('yyyy-MM-dd', $model->birthday),
+        'language'    => 'ru',
+        'htmlOptions' => '',
+        'options'     => array(
+            'showAnim'        => 'fold',
+            'dateFormat'      => 'dd.mm.yy',
+            'changeMonth'     => 'true',
+            'changeYear'      => 'true',
             'showButtonPanel' => 'true',
-            'defaultDate' => '-18y',
-            'maxDate' => '+0',
-            'yearRange' => '-100:+0'
+            'defaultDate'     => '-18y',
+            'maxDate'         => '+0',
+            'yearRange'       => '-100:+0'
         ),
     ), TRUE); ?>
         <?php echo $form->error($model, 'birthday'); ?>
     </div>
-<!--    --><?//=CHtml::ajaxSubmitButton('Сделать запрос', array('checkFilters'), array('update' => '#result'), array('id' => 'sendRequest', 'style' => 'display:none'))?>
     <? $this->widget('bootstrap.widgets.TbButton', array(
-    'buttonType' => 'ajaxSubmit',
-    'url'=>'',
-    'label' => 'Сделать запрос',
+    'buttonType'  => 'ajaxSubmit',
+    'url'         => array('checkFilters'),
+    'label'       => 'Сделать запрос',
+    'type'        => 'info',
+    'size'        => 'large',
+    'htmlOptions' => array('style' => 'display:none', 'id' => 'sendRequest'),
     'ajaxOptions' => array(
         'update' => '#result'
     ),
 )); ?>
+</div>
+<!--    --><? //=CHtml::ajaxSubmitButton('Сделать запрос', array('checkFilters'), array('update' => '#result'), array('id' => 'sendRequest', 'style' => 'display:none'))?>
 
-    <div id='result'>
-    </div>
+<div id='result'>
+</div>
 
-    <?php $this->endWidget(); ?>
+<?php $this->endWidget(); ?>
 </div>

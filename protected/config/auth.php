@@ -54,7 +54,7 @@ return array(
         'type' => CAuthItem::TYPE_ROLE,
         'description' => 'Администратор системы',
         'children' => array(
-            'adminUser','viewAllComments', 'editRequest','bankAdmin', 'agentAdmin', 'editRequest', 'deleteRequest', 'viewRequest', 'adminOrganization', 'viewGlobalStatistic' // позволим админу всё, что позволено модератору
+            'adminUser','viewAllComments' ,'editRequest','bankAdmin', 'agentAdmin', 'deleteRequest', 'viewRequest', 'adminOrganization', 'viewGlobalStatistic' // позволим админу всё, что позволено модератору
         ),
         'bizRule' => NULL,
         'data' => NULL

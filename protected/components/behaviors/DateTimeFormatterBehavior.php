@@ -21,14 +21,42 @@ class DateTimeFormatterBehavior extends CActiveRecordBehavior
      */
     public $outputFormat = 'Y-m-d';
 
+    protected $_modelScenario;
+
+    protected $_formatScenario;
+
     public function beforeValidate($event)
     {
-        if (!empty($this->attribute) AND !empty($this->inputFormat) AND !empty($this->outputFormat) AND !empty($this->owner->{$this->attribute})) {
-            $formatter = new DateTime();
-            $date = $this->owner->{$this->attribute};
-            $this->owner->{$this->attribute} = $formatter->createFromFormat($this->inputFormat, $date)->format($this->outputFormat);
-            ;
+        if (!empty($this->attribute) AND !empty($this->inputFormat) AND !empty($this->outputFormat)) {
+            if (is_array($this->attribute)) {
+                $this->_modelScenario = $this->owner->scenario;
+                foreach ($this->attribute as $attr) {
+                    if (is_array($attr) AND array_key_exists('on', $attr)) {
+                        $this->_formatScenario = $attr['on'];
+                        unset($attr['on']);
+                        if ($this->_formatScenario != $this->_modelScenario) {
+                            continue;
+                        }
+                        $attr = explode(',', array_pop($attr));
+                        foreach ($attr as $one) {
+                            if (!empty($this->owner->$one))
+                                $this->owner->$one = $this->format($this->owner->$one);
+                        }
+                    }
+                }
+            } else {
+                $this->attribute = explode(',', $this->attribute);
+                foreach ($this->attribute as $attr) {
+                    $this->owner->$attr = $this->format($this->owner->$attr);
+                }
+            }
         }
         parent::beforeValidate($event);
+    }
+
+    private function format($date)
+    {
+        $formatter = new DateTime();
+        return $formatter->createFromFormat($this->inputFormat, $date)->format($this->outputFormat);
     }
 }

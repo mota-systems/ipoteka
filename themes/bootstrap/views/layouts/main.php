@@ -13,9 +13,8 @@
 </head>
 
 <body>
-<?$visible = TRUE?>
 <?php $this->widget('bootstrap.widgets.TbNavbar', array(
-    'type'  => 'inverse',
+//    'type'  => 'inverse',
     'items' => array(
         array(
             'class' => 'bootstrap.widgets.TbMenu',
@@ -33,6 +32,7 @@
             'visible'     => Yii::app()->user->checkAccess('createRequest'),
         ),
     ),
+    'htmlOptions'=>array('style'=>'color:blue'),
 )); ?>
 
 <div class="container" id="page">

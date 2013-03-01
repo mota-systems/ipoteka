@@ -20,21 +20,19 @@ $this->breadcrumbs = array(
 $dateCreated = $formatter->formatDateTime($model->date_created, 'long', 'short');
 $birthday = $formatter->formatDateTime($model->birthday, 'long', FALSE);
 $issue = $formatter->formatDateTime($model->passport_issue, 'long', FALSE);*/
-$birthday = new DateTime($model->birthday);
-$age = $birthday->diff(new Datetime())->y;
+
 ?>
 <?php $this->widget('bootstrap.widgets.TbDetailView', array(
-    'data' => array('summ' => $model->summ, 'initialFee' => $model->initialFee, 'objectTypeId' => $model->type->type, 'age' => $age),
+    'data' =>$model,
     'attributes' => array(
-        array('name' => 'summ', 'label' => $model->getAttributeLabel('summ')),
-        array('name' => 'initialFee', 'label' => $model->getAttributeLabel('initialFee')),
-        array('name' => 'objectTypeId', 'label' => $model->getAttributeLabel('objectTypeId')),
-        array('name' => 'age', 'label' => 'Возраст'),
+        'summ',
+        'initialFee',
+        'type.type',
+        'age'
     ),
 )); ?>
 <div id='comments'>
     <?  if (Yii::app()->user->checkAccess('viewAllComments')) {
-    echo $model->commentCount;
     $organizations = Organizations::get_banks();
     $tabs = array();
     foreach ($organizations as $org_id => $org_name) {

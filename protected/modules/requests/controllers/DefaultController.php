@@ -30,14 +30,14 @@ class DefaultController extends BaseController
         return array(
             array('allow', // allow all users to perform 'index' and 'view' actions
                 'actions' => array('index', 'view'),
-                'users' => array('@'),
+                'users'   => array('@'),
             ),
             array('allow', // allow all users to perform 'index' and 'view' actions
                 'actions' => array('checkFilters', 'create', 'update'),
-                'roles' => array('agentManager'),
+                'roles'   => array('agentManager'),
             ),
             array('allow', // allow admin user to perform 'admin' and 'delete' actions
-                'actions' => array('delete'),
+                'actions'    => array('delete'),
                 'expression' => 'Yii::app()->user->checkAccess("deleteRequest")',
             ),
             array('deny', // deny all users
@@ -48,6 +48,7 @@ class DefaultController extends BaseController
 
     /**
      * Displays a particular model.
+     *
      * @param integer $id the ID of the model to be displayed
      */
     public function actionView($id)
@@ -94,7 +95,6 @@ class DefaultController extends BaseController
             $message = "Максимальная сумма $filter->max_summ";
         }
         return $result ? $result : $message;
-//        return $filter->max_summ;
     }
 
     /**
@@ -123,24 +123,26 @@ class DefaultController extends BaseController
     /**
      * Updates a particular model.
      * If update is successful, the browser will be redirected to the 'view' page.
+     *
      * @param integer $id the ID of the model to be updated
+     *
+     * @throws CHttpException
+     * @return void
      */
-    public
-    function actionUpdate($id)
+    public function actionUpdate($id)
     {
-
+         // TODO: что за хуйня с доабвлением номера телефона через маску?
         $model = $this->loadModel($id);
-        if ($model->status != Requests::STATUS_DRAFT) {
+        if ($model->status != Requests::STATUS_DRAFT AND !Yii::app()->user->checkAccess('editRequest')) {
             throw new CHttpException(403, 'Эта заявка уже находится на рассмотрении. Её больше нельзя редактировать.', 400);
         }
-        $model->scenario = 'continueCreate';
-        $model->status = Requests::STATUS_NEW;
 
         // Uncomment the following line if AJAX validation is needed
         $this->performAjaxValidation($model);
 
-        if (isset($_POST['Requests'])) {
+       if (isset($_POST['Requests'])) {
             $model->attributes = $_POST['Requests'];
+            $model->status = Requests::STATUS_NEW;
             if ($model->save())
                 $this->redirect(array('view', 'id' => $model->id));
         }
@@ -153,6 +155,7 @@ class DefaultController extends BaseController
     /**
      * Deletes a particular model.
      * If deletion is successful, the browser will be redirected to the 'admin' page.
+     *
      * @param integer $id the ID of the model to be deleted
      */
     public
@@ -188,12 +191,13 @@ class DefaultController extends BaseController
     /**
      * Returns the data model based on the primary key given in the GET variable.
      * If the data model is not found, an HTTP exception will be raised.
+     *
      * @param integer $id the ID of the model to be loaded
+     *
      * @return Requests the loaded model
      * @throws CHttpException
      */
-    public
-    function loadModel($id)
+    public function loadModel($id)
     {
         if (Yii::app()->user->checkAccess('viewRequest'))
             $model = Requests::model()->with('commentCount', 'author')->findByPk($id);
@@ -204,10 +208,10 @@ class DefaultController extends BaseController
 
     /**
      * Performs the AJAX validation.
+     *
      * @param Requests $model the model to be validated
      */
-    protected
-    function performAjaxValidation($model)
+    protected function performAjaxValidation($model)
     {
         if (isset($_POST['ajax']) && $_POST['ajax'] === 'requests-form') {
             echo CActiveForm::validate($model);

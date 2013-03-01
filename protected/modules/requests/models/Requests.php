@@ -4,26 +4,26 @@
  * This is the model class for table "requests".
  *
  * The followings are the available columns in table 'requests':
- * @property integer $id
- * @property string $surname
- * @property string $patronymic
- * @property string $name
- * @property integer $sex
- * @property string $birthday
- * @property string $birthday_place
- * @property string $citizenship
- * @property integer $passport_seria
- * @property integer $passport_number
- * @property string $passport_issue
- * @property string $passport_issued
- * @property integer $created_by_user_id
- * @property string $date_created
- * @property integer $initialFee
+ * @property integer    $id
+ * @property string     $surname
+ * @property string     $patronymic
+ * @property string     $name
+ * @property integer    $sex
+ * @property string     $birthday
+ * @property string     $birthday_place
+ * @property string     $citizenship
+ * @property integer    $passport_seria
+ * @property integer    $passport_number
+ * @property string     $passport_issue
+ * @property string     $passport_issued
+ * @property integer    $created_by_user_id
+ * @property string     $date_created
+ * @property integer    $initialFee
  *
  * The followings are the available model relations:
  * @property Comments[] $comments
- * @property Files[] $files
- * @property Users $createdByUser
+ * @property Files[]    $files
+ * @property Users      $createdByUser
  */
 class Requests extends CActiveRecord
 {
@@ -33,8 +33,21 @@ class Requests extends CActiveRecord
     const STATUS_NEW = 2;
 
     /**
+     * @var string ФИО клиента
+     */
+    public $fullName;
+
+
+    /**
+     * @var возраст клиента
+     */
+    public $age;
+
+    /**
      * Returns the static model of the specified AR class.
+     *
      * @param string $className active record class name.
+     *
      * @return Requests the static model class
      */
     public static function model($className = __CLASS__)
@@ -42,31 +55,79 @@ class Requests extends CActiveRecord
         return parent::model($className);
     }
 
+    /**
+     * @param  $age
+     */
+    public function setAge($age)
+    {
+        $this->age = $age;
+    }
+
+    /**
+     * @return
+     */
+    public function getAge()
+    {
+        return $this->age;
+    }
+
+    public function getFullName()
+    {
+        return $this->fullName;
+    }
+
+    public function setFullName($name)
+    {
+        $this->fullName = $name;
+    }
+
     public function behaviors()
     {
         return array(
             'AutoTimestampBehavior' => array(
-                'class' => 'zii.behaviors.CTimestampBehavior',
+                'class'           => 'zii.behaviors.CTimestampBehavior',
                 'createAttribute' => 'date_created',
                 'updateAttribute' => NULL,
             ),
-            'AutoAuthorBehavior' => array(
-                'class' => 'application.components.behaviors.AuthorBehavior',
+            'AutoAuthorBehavior'    => array(
+                'class'           => 'application.components.behaviors.AuthorBehavior',
                 'authorAttribute' => 'created_by_user_id',
             ),
-            'AutoDateTimeFormatter'=>array(
-                'class'=>'application.components.behaviors.DateTimeFormatterBehavior'
+            'AutoDateTimeFormatter' => array(
+                'class'     => 'application.components.behaviors.DateTimeFormatterBehavior',
+//                'attribute' => 'birthday',
+                'attribute' => array(
+                    array('birthday', 'on' => 'firstCreate'),
+                    array('passport_issue', 'on' => 'continueCreate'),
+                )
+            ),
+            'AutoUpperCase'=>array(
+                'class'=>'application.components.behaviors.UpperCaseBehavior',
+                'attribute'=>array('name', 'surname', 'patronymic')
             ),
         );
     }
 
+
+    public function afterFind()
+    {
+        $this->fullname = $this->surname . ' ' . $this->name . ' ' . $this->patronymic;
+        $formatter = new CDateFormatter('ru_ru');
+        $birthday = new DateTime($this->birthday);
+        $age = $birthday->diff(new DateTime())->y;
+        $this->age = $age . ' ' . Yii::t('ipoteka', 'год|года|лет|год', $age);
+        if ($this->scenario != 'update') {   // TODO:: разобраться с ебучими сценариями
+            $this->birthday = $formatter->formatDateTime($this->birthday, 'long', FALSE);
+            $this->passport_issue = $formatter->formatDateTime($this->passport_issue, 'long', FALSE);
+        }
+    }
 
 
     public static function getNameByType($sex)
     {
         $sex = intval($sex);
         $types = array(
-            self::SEX_MAN => 'Мужчина',
+            self::SEX_MAN   => 'Мужчина',
             self::SEX_WOMEN => 'Женщина',
         );
         return array_key_exists($sex, $types) ? $types[$sex] : FALSE;
@@ -94,18 +155,19 @@ class Requests extends CActiveRecord
             array('surname, patronymic, name', 'length', 'max' => 100, 'min' => 2),
             array('surname, patronymic, name', 'AlphaValidator'),
             array('sex, passport_seria, passport_number, objectTypeId, initialFee, summ', 'numerical', 'integerOnly' => TRUE),
-            array('sex, passport_seria, passport_number, birthday_place, citizenship, passport_issued, passport_issue, mobile_phone', 'required', 'on' => 'continueCreate'),
+            array('passport_seria, passport_number, birthday_place, citizenship, passport_issued, passport_issue, mobile_phone', 'required', 'on' => 'continueCreate'),
             array('birthday_place, citizenship', 'length', 'max' => 250, 'min' => 2),
             array('passport_issued', 'length', 'max' => 255, 'min' => 5),
-            array('birthday, passport_issue', 'date', 'format' => 'yyyy-MM-dd'),
-//            array('birthday', 'AgeValidator', 'min'=>18),
-            array('passport_issue', 'DateDiffValidator', 'min'=>0, 'max'=>50, 'minDiffItem'=>'d', 'maxDiffItem'=>'y', 'tooMax'=>'Паспорт не может быть выдан больше {value} лет назад'),
-            array('birthday', 'DateDiffValidator', 'min'=>18, 'max'=>100, 'minDiffItem'=>'y', 'maxDiffItem'=>'y', 'tooMax'=>'Максимальный возраст заемщика {value} лет', 'tooMin'=>'Минимальный возраст заемщика {value} лет'),
+            array('birthday', 'date', 'format' => 'yyyy-MM-dd', 'allowEmpty' => FALSE, 'on' => 'firstCreate'),
+            array('passport_issue', 'date', 'format' => 'yyyy-MM-dd', 'on' => 'continueCreate'),
+            array('passport_issue', 'DateDiffValidator', 'min' => 0, 'max' => 50, 'minDiffItem' => 'd', 'maxDiffItem' => 'y', 'tooMax' => 'Паспорт не может быть выдан больше {value} лет назад', 'on' => 'continueCreate'),
+            array('birthday', 'DateDiffValidator', 'min' => 18, 'max' => 100, 'minDiffItem' => 'y', 'maxDiffItem' => 'y', 'tooMax' => 'Максимальный возраст заемщика {value} лет', 'tooMin' => 'Минимальный возраст заемщика {value} лет', 'on' => 'firstCreate'),
             // The following rule is used by search().
             // Please remove those attributes that should not be searched.
             array('surname, mobile_phone, patronymic, name, sex, birthday, birthday_place, citizenship, passport_seria, passport_number, passport_issue, passport_issued, created_by_user_id, date_created', 'safe', 'on' => 'search'),
         );
     }
+
 
     /**
      * @return array relational rules.
@@ -115,12 +177,12 @@ class Requests extends CActiveRecord
         // NOTE: you may need to adjust the relation name and the related
         // class name for the relations automatically generated below.
         return array(
-            'comments' => array(self::HAS_MANY, 'Comments', 'request_id', 'order' => 'comments.date_created DESC'),
+            'comments'     => array(self::HAS_MANY, 'Comments', 'request_id', 'order' => 'comments.date_created DESC'),
 //            'commentsGrouped'=>array(self::HAS_MANY, 'Comments', 'group'=>'organization_id'),
-            'files' => array(self::HAS_MANY, 'Files', 'request_id'),
-            'author' => array(self::BELONGS_TO, 'Users', 'created_by_user_id'),
+            'files'        => array(self::HAS_MANY, 'Files', 'request_id'),
+            'author'       => array(self::BELONGS_TO, 'Users', 'created_by_user_id'),
             'commentCount' => array(self::STAT, 'Comments', 'request_id'),
-            'type' => array(self::BELONGS_TO, 'ObjectType', 'objectTypeId')
+            'type'         => array(self::BELONGS_TO, 'ObjectType', 'objectTypeId')
         );
     }
 
@@ -130,25 +192,27 @@ class Requests extends CActiveRecord
     public function attributeLabels()
     {
         return array(
-            'id' => 'Номер заявки',
-            'surname' => 'Фамилия',
-            'patronymic' => 'Отчество',
-            'name' => 'Имя',
-            'sex' => 'Пол',
-            'summ' => 'Сумма займа',
-            'birthday' => 'Дата рождения',
-            'birthday_place' => 'Место рождения',
-            'citizenship' => 'Гражданство',
-            'passport_seria' => 'Серия паспорта',
-            'passport_number' => 'Номер паспорта',
-            'passport_issue' => 'Дата выдачи паспорта',
-            'passport_issued' => 'Орган, выдавший паспорт',
-            'mobile_phone' => 'Мобильный телефон',
-            'date_created' => 'Дата создания заявки',
+            'id'                 => 'Номер заявки',
+            'surname'            => 'Фамилия',
+            'patronymic'         => 'Отчество',
+            'name'               => 'Имя',
+            'sex'                => 'Пол',
+            'summ'               => 'Сумма займа',
+            'birthday'           => 'Дата рождения',
+            'birthday_place'     => 'Место рождения',
+            'citizenship'        => 'Гражданство',
+            'passport_seria'     => 'Серия паспорта',
+            'passport_number'    => 'Номер паспорта',
+            'passport_issue'     => 'Дата выдачи паспорта',
+            'passport_issued'    => 'Орган, выдавший паспорт',
+            'mobile_phone'       => 'Мобильный телефон',
+            'date_created'       => 'Дата создания заявки',
             'created_by_user_id' => 'Создано пользователем',
-            'objectTypeId' => 'Тип объекта',
-            'initialFee' => 'Первоначальный взнос',
-            'status' => 'Статус заявки'
+            'objectTypeId'       => 'Тип объекта',
+            'initialFee'         => 'П/взнос',
+            'status'             => 'Статус заявки',
+            'age'                => 'Возраст',
+            'fullName'=>'',
         );
     }
 

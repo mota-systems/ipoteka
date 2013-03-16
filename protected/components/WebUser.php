@@ -1,3 +1,4 @@
+
 <?php
 /**
  * Created by JetBrains PhpStorm.
@@ -18,12 +19,37 @@ class WebUser extends CWebUser
         }
     }
 
+    public function isAdmin() {
+        return $this->getRoleId()==Roles::TYPE_ADMIN ? TRUE : FALSE;
+    }
+
+    function getRoleId()
+    {
+        if ($user = $this->getModel()) {
+            // в таблице User есть поле role
+            return $user->roleId;
+        }
+    }
+
+
+
     function getOrganization_id()
     {
         if ($user = $this->getModel()) {
             // в таблице User есть поле role
             return $user->organization_id;
         }
+    }
+
+
+    public function getOrganizationType() {
+        if($user = $this->getModel())
+            return $user->organization->type;
+    }
+
+    public function getPhio() {
+        if($user = $this->getModel())
+            return $user->phio;
     }
 
     private function getModel()

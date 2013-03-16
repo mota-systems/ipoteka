@@ -13,7 +13,13 @@ class RequestsModule extends CWebModule
 			'requests.models.*',
 			'requests.components.*',
 		));
-   /*     $urlManager = Yii::app()->urlManager;
+        if(Yii::app()->user->role==Users::ROLE_ADMIN)
+            $this->defaultController = 'admin';
+        elseif(in_array(Yii::app()->user->role, array(Users::ROLE_AGENT_ADMIN, Users::ROLE_AGENT_MANAGER)))
+            $this->defaultController = 'agent';
+        else
+            $this->defaultController = 'bank';
+           /*     $urlManager = Yii::app()->urlManager;
         $this->_rules['requests/<action:\w+>']='requests/default/<action>';
         $this->_rules['requests/<action:\w+>/<id:\d+>']='requests/default/<action>';
         $urlManager->addRules($this->_rules);*/

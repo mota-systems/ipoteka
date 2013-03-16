@@ -6,7 +6,7 @@
 
 <div class="form">
 
-<?php $form=$this->beginWidget('CActiveForm', array(
+<?php $form=$this->beginWidget('TbActiveForm', array(
 	'id'=>'comments-form',
 	'enableAjaxValidation'=>true,
 //    'action'=>

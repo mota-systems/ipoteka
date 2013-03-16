@@ -8,186 +8,199 @@
  */
 
 return array(
-    'guest' => array(
-        'type' => CAuthItem::TYPE_ROLE,
+    'guest'                       => array(
+        'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Гость',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'agentManager' => array(
-        'type' => CAuthItem::TYPE_ROLE,
+    'agentManager'                => array(
+        'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Менеджер Агента',
-        'children' => array(
+        'children'    => array(
             'guest', 'viewOwnRequest', 'viewAllComments', 'createRequest', 'sendComment', 'uploadDocument', 'indexComment'
         ),
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'agentAdmin' => array(
-        'type' => CAuthItem::TYPE_ROLE,
+    'agentAdmin'                  => array(
+        'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Управляющий агента',
-        'children' => array(
+        'children'    => array(
             'agentManager', 'viewOwnOrganizationRequest', 'viewStatistic', 'adminOwnUser', // позволим модератору всё, что позволено пользователю
         ),
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'bankManager' => array(
-        'type' => CAuthItem::TYPE_ROLE,
+    'bankManager'                 => array(
+        'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Менеджер банка',
-        'children' => array(
+        'children'    => array(
             'guest', 'indexRequest', 'viewRequest', 'considerDocument', 'considerRequest', 'viewOwnOrganizationComments', 'makeDeal', 'sendComment' // позволим админу всё, что позволено модератору
         ),
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'bankAdmin' => array(
-        'type' => CAuthItem::TYPE_ROLE,
+    'bankAdmin'                   => array(
+        'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Управляющий банка',
-        'children' => array(
-            'bankManager', 'viewStatistic', 'adminOwnUser', 'editFilter' // позволим админу всё, что позволено модератору
+        'children'    => array(
+            'overrideConsiderRequest', 'bankManager', 'viewStatistic', 'adminOwnUser', 'adminUser', 'editFilter' // позволим админу всё, что позволено модератору
         ),
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'admin' => array(
-        'type' => CAuthItem::TYPE_ROLE,
+    'admin'                       => array(
+        'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Администратор системы',
-        'children' => array(
-            'adminUser','viewAllComments' ,'editRequest','bankAdmin', 'agentAdmin', 'deleteRequest', 'viewRequest', 'adminOrganization', 'viewGlobalStatistic' // позволим админу всё, что позволено модератору
+        'children'    => array(
+            'adminUser', 'indexAllRequests', 'viewAllComments', 'editRequest', 'bankAdmin', 'agentAdmin', 'deleteRequest', 'viewRequest', 'adminOrganization', 'viewGlobalStatistic' // позволим админу всё, что позволено модератору
         ),
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'createRequest' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'createRequest'               => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Создать заявку',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'editRequest' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'editRequest'                 => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Редактировать заявку',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'indexRequest' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'indexRequest'                => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Просмотр списка заявок',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
 
-    'viewRequest' => array(
-        'type' => CAuthItem::TYPE_ROLE,
+    'indexAllRequests'            => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
+        'description' => 'Просмотр всего списка заявок',
+        'bizRule'     => NULL,
+        'data'        => NULL
+    ),
+
+    'viewRequest'                 => array(
+        'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Просмотр заявки',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'considerRequest' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'considerRequest'             => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Отказать\одобрить заявку',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'deleteRequest' => array(
-        'type' => CAuthItem::TYPE_ROLE,
+    'overrideConsiderRequest'     => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
+        'description' => 'Отказать\одобрить заявку',
+        'bizRule'     => NULL,
+        'data'        => NULL
+    ),
+    'deleteRequest'               => array(
+        'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Administrator',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'editFilter' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'editFilter'                  => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Редактировать фильтры',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'viewStatistic' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'viewStatistic'               => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Просмотр статистики',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'viewGlobalStatistic' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'viewGlobalStatistic'         => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Просмотр глобальной статистики',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'considerDocument' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'considerDocument'            => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Одобрить\вернуть документ',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'uploadDocument' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'uploadDocument'              => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Загрузить документ',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'sendComment' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'sendComment'                 => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Оставить комментарий заявок',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'makeDeal' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'makeDeal'                    => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Совершить сделку',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'adminUser' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'adminUser'                   => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Управление пользователями',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'adminOrganization' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'adminOrganization'           => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Управление организацияйми',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
-    'viewOwnOrganizationRequest' => array(
-        'type' => CAuthItem::TYPE_TASK,
+    'viewOwnOrganizationRequest'  => array(
+        'type'        => CAuthItem::TYPE_TASK,
         'description' => 'Просмотр заявки своей организации',
-        'bizRule' => 'return Yii::app()->user->organization_id==$params["request"]->author->organization_id;',
-        'children' => array(
+        'bizRule'     => 'return Yii::app()->user->organization_id==$params["request"]->author->organization_id;',
+        'children'    => array(
             'viewOwnRequest'
         ),
-        'data' => NULL
+        'data'        => NULL
     ),
-    'viewOwnRequest' => array(
-        'type' => CAuthItem::TYPE_TASK,
+    'viewOwnRequest'              => array(
+        'type'        => CAuthItem::TYPE_TASK,
         'description' => 'Просмотр своей заявки',
-        'bizRule' => 'return Yii::app()->user->id==$params["request"]->author->id',
-        'children' => array(
+        'bizRule'     => 'return Yii::app()->user->id==$params["request"]->author->id',
+        'children'    => array(
             'viewRequest'
         ),
-        'data' => NULL
+        'data'        => NULL
     ),
-    'adminOwnUser' => array(
-        'type' => CAuthItem::TYPE_TASK,
+    'adminOwnUser'                => array(
+        'type'        => CAuthItem::TYPE_TASK,
         'description' => 'Управление пользователями своей организации',
-        'bizRule' => 'return Yii::app()->user->organization_id==$params["user"]->organization_id;',
-        'children' => array(
+        'bizRule'     => 'return Yii::app()->user->organization_id==$params["user"]->organization_id;',
+        'children'    => array(
             'adminUser',
         ),
-        'data' => NULL
+        'data'        => NULL
     ),
-    'viewAllComments' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+    'viewAllComments'             => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Просмотр всех комментариев',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
     'viewOwnOrganizationComments' => array(
-        'type' => CAuthItem::TYPE_OPERATION,
+        'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Просмотр комментариев своей организации',
-        'bizRule' => NULL,
-        'data' => NULL
+        'bizRule'     => NULL,
+        'data'        => NULL
     ),
     /*    'indexOwnRequest' => array(
             'type' => CAuthItem::TYPE_TASK,

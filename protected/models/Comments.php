@@ -65,6 +65,7 @@ class Comments extends CActiveRecord
         // will receive user inputs.
         return array(
             array('comment', 'length', 'max' => 500),
+            array('recipient_id', 'exist', 'className'=>'organizations', 'allowEmpty'=>FALSE, 'attributeName'=>'id', 'message'=>'Ошибка. Организация, которой вы хотите отправить сообщение, не существует.'),
             // The following rule is used by search().
             // Please remove those attributes that should not be searched.
             array('request_id, created_by_user_id, organization_id, date_created', 'safe', 'on' => 'search'),

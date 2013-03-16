@@ -8,7 +8,7 @@
 class UserIdentity extends CUserIdentity
 {
     private $_id, $_role;
-    private $_salt = 'SuFhl1nmZolZ9ULgkghy';
+    public static $salt = 'SuFhl1nmZolZ9ULgkghy';
 
     public function authenticate()
     {

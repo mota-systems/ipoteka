@@ -28,11 +28,11 @@ class UsersController extends BaseController
     {
         return array(
             array('allow', // allow all users to perform 'index' and 'view' actions
-                'actions' => array('index', 'view'),
+                'actions' => array('view'),
                 'users' => array('@'),
             ),
             array('allow', // allow authenticated user to perform 'create' and 'update' actions
-                'actions' => array('create', 'update', 'delete'),
+                'actions' => array('create', 'update', 'delete', 'index'),
                 'roles' => array(Users::ROLE_ADMIN, Users::ROLE_BANK_ADMIN, Users::ROLE_AGENT_ADMIN),
             ),
             array('deny', // deny all users
@@ -61,7 +61,7 @@ class UsersController extends BaseController
         $model = new Users('register');
 
         // Uncomment the following line if AJAX validation is needed
-        // $this->performAjaxValidation($model);
+         $this->performAjaxValidation($model);
 
         if (isset($_POST['Users'])) {
             $model->attributes = $_POST['Users'];
@@ -116,6 +116,7 @@ class UsersController extends BaseController
      */
     public function actionIndex()
     {
+//        Yii::app()->cache->flush();
         $model = Users::model()->with('organization');
         $model->scenario = 'search';
         $model->unsetAttributes(); // clear any default values

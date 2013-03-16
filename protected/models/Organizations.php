@@ -4,18 +4,18 @@
  * This is the model class for table "organizations".
  *
  * The followings are the available columns in table 'organizations':
- * @property integer $id
- * @property integer $type
- * @property string $name
+ * @property integer    $id
+ * @property integer    $type
+ * @property string     $name
  *
  * The followings are the available model relations:
  * @property Comments[] $comments
- * @property Filters[] $filters
- * @property Users[] $users
+ * @property Filters[]  $filters
+ * @property Users[]    $users
  */
 class Organizations extends CActiveRecord
 {
-    const TYPE_ALL = 0;
+    const TYPE_ADMIN = 0;
     const TYPE_AGENT = 1;
     const TYPE_BANK = 2;
     const ALL_IN_ARRAY_CACHE = 'organizations_in_array';
@@ -23,7 +23,9 @@ class Organizations extends CActiveRecord
 
     /**
      * Returns the static model of the specified AR class.
+     *
      * @param string $className active record class name.
+     *
      * @return Organizations the static model class
      */
     public static function model($className = __CLASS__)
@@ -34,19 +36,40 @@ class Organizations extends CActiveRecord
     public function scopes()
     {
         return array(
-            'banks'=>array(
-                'condition'=>'type='.self::TYPE_BANK,
+            'banks'  => array(
+                'condition' => 'type=' . self::TYPE_BANK,
+            ),
+            'agents' => array(
+                'condition' => 'type=' . self::TYPE_AGENT,
             ),
         );
+    }
+
+    public function banks($bank = NULL)
+    {
+        $criteria = is_null($bank) ?
+            array('condition' => 'type=' . self::TYPE_BANK) :
+            array('condition' => array('type=' . self::TYPE_BANK, 'id=' . $bank));
+        $this->getDbCriteria()->mergeWith($criteria);
+        return $this;
+    }
+
+    public function agents($agent = NULL)
+    {
+        $criteria = is_null($agent) ?
+            array('condition' => 'type=' . self::TYPE_AGENT) :
+            array('condition' => array('type=' . self::TYPE_AGENT, 'id=' . $agent));
+        $this->getDbCriteria()->mergeWith($criteria);
+        return $this;
     }
 
     public static function getNameByType($type)
     {
         $type = intval($type);
         $types = array(
-            self::TYPE_ALL => 'Все',
+            self::TYPE_ADMIN   => 'Администрация',
             self::TYPE_AGENT => 'Агент',
-            self::TYPE_BANK => 'Банк',
+            self::TYPE_BANK  => 'Банк',
         );
         if (array_key_exists($type, $types))
             return $types[$type];
@@ -112,8 +135,8 @@ class Organizations extends CActiveRecord
         // class name for the relations automatically generated below.
         return array(
             'comments' => array(self::HAS_MANY, 'Comments', 'organization_id'),
-            'filters' => array(self::HAS_MANY, 'Filters', 'organization_id'),
-            'users' => array(self::HAS_MANY, 'Users', 'organization_id'),
+            'filters'  => array(self::HAS_MANY, 'Filters', 'organization_id'),
+            'users'    => array(self::HAS_MANY, 'Users', 'organization_id'),
         );
     }
 
@@ -123,7 +146,7 @@ class Organizations extends CActiveRecord
     public function attributeLabels()
     {
         return array(
-            'id' => 'ID',
+            'id'   => 'ID',
             'type' => 'Тип организации',
             'name' => 'Название организации',
         );

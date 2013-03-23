@@ -42,7 +42,7 @@ class DefaultController extends BaseController
         if (isset($_GET['Requests']))
             $model->attributes = $_GET['Requests'];
 
-        $this->render('index', array(
+        $this->render('/general/index', array(
             'model' => $model,
         ));
         /*$dataProvider=new CActiveDataProvider('Requests');
@@ -51,13 +51,25 @@ class DefaultController extends BaseController
         ));*/
     }
 
+    /**
+     * Displays a particular model.
+     *
+     * @param integer $id the ID of the model to be displayed
+     */
+    public function actionView($id)
+    {
+        $this->render('view', array(
+            'model' => $this->loadModel($id),
+        ));
+    }
+
 
     /**
      * Performs the AJAX validation.
      *
      * @param Requests $model the model to be validated
      */
-    protected function performAjaxValidation($model)
+    public function performAjaxValidation($model)
     {
         if (isset($_POST['ajax']) && $_POST['ajax'] === 'requests-form') {
             echo CActiveForm::validate($model);

@@ -28,14 +28,19 @@
             ),
         ),
         'id',
-        'fullName',
+        array(
+            'name' => 'fullName',
+            'value'=>'$data->fullName',
+        ),
         array(
             'name'     => 'objectTypeId',
             'value'    => '$data->type->type',
             'filter'   => ObjectType::getAllInArray(),
             'sortable' => TRUE,
         ),
+        'status.status',
         array(
+            'header'      => 'Варианты действий',
             'class'       => 'bootstrap.widgets.TbButtonColumn',
             'htmlOptions' => array('style' => 'width: 50px'),
             'buttons'     => array(

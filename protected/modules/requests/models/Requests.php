@@ -266,7 +266,24 @@ class Requests extends CActiveRecord
 
     //--Registration
 
+    public $filter;
     private $fullName;
+
+
+    public function getFullName()
+    {
+        return "$this->surname $this->name $this->patronymic";
+    }
+
+    public function setFullName($name)
+    {
+        $this->fullName = $name;
+    }
+
+//    public function onAfterFind($event){
+//        $this->fullname = "$this->surname $this->name $this->patronymic";
+//        parent::onAfterFind($event);
+//    }
 
     /**
      * Returns the static model of the specified AR class.
@@ -281,41 +298,32 @@ class Requests extends CActiveRecord
     }
 
 
-    /**
-     * @return
-     */
-    public function getAge()
+    public function onBeforeValidate($event)
     {
-        $birthday = new DateTime($this->birthday);
-        $age = $birthday->diff(new DateTime())->y;
-        return $age . ' ' . Yii::t('ipoteka', 'год|года|лет|год', $age);
-    }
-
-    public function getFullName()
-    {
-        if ($this->fullName == NULL) {
-            $this->setFullName($this->fullName);
-//            Yii::app()->end();
-            return $this->surname . ' ' . $this->name . ' ' . $this->patronymic;
-//        return $this->surname . ' ' . $this->name . ' ' . $this->patronymic;
+        if ($this->scenario == 'filter') {
+            $rules[] = array('filter', 'required', 'message' => 'Не дает займы по выбранному типу объекта', 'on' => 'filter');
+            $rules[] = array('summ', 'compare', 'compareValue' => $this->filter->min_summ, 'operator' => '>', 'on' => 'filter', 'message' => "Минимальная сумма ипотеки -- {$this->filter->min_summ} " . Yii::t('ipoteka', 'год|года|лет|год', $this->filter->min_summ));
+            $rules[] = array('summ', 'compare', 'compareValue' => $this->filter->max_summ, 'operator' => '<', 'on' => 'filter', 'message' => "Максимальная сумма ипотеки -- {$this->filter->max_summ} " . Yii::t('ipoteka', 'год|года|лет|год', $this->filter->min_summ));
+            $rules[] = array('age', 'compare', 'compareValue' => $this->filter->min_borrower_age, 'operator' => '>', 'on' => 'filter', 'message' => "Минимальный возраст заемщика -- {$this->filter->min_borrower_age} " . Yii::t('ipoteka', 'год|года|лет|год', $this->filter->min_summ));
+            $rules[] = array('age', 'compare', 'compareValue' => $this->filter->max_borrower_age, 'operator' => '<', 'on' => 'filter', 'message' => "Максимальный возраст заемщика -- {$this->filter->max_borrower_age} " . Yii::t('ipoteka', 'год|года|лет|год', $this->filter->min_summ));
+            $validators = $this->validatorList;
+            foreach ($rules as $rule) {
+                $validators->add(CValidator::createValidator($rule[1], $this, $rule[0], array_slice($rule, 2)));
+            }
         }
-        return $this->fullName;
-//        if (empty($this->fullName))
-//            $this->setFullName($this->fullName);
-//        echo var_dump($this->fullName);
+        parent::onBeforeValidate($event);
     }
 
-    public function setFullName($fullName)
+    public function onBeforeSave($event)
     {
-        $this->fullname = trim($fullName);
+        if ($this->scenario == 'firstCreate') {
+            $this->summ = $this->objectCost - $this->initialFee;
+            $dateFormatter = new DateTime($this->birthday);
+            $this->age = $dateFormatter->diff(new DateTime)->y;
+//            $this->fullname = "$this->surname $this->name $this->patronymic";
+        }
+        parent::onBeforeSave($event);
     }
-
-//    public function afterSave(){
-//        parent::afterSave();
-//        if($this->consider){
-//
-//        }
-//    }
 
 //    public function afterFind()
 //    {
@@ -328,7 +336,6 @@ class Requests extends CActiveRecord
 //////            $this->passport_issue = $formatter->formatDateTime($this->passport_issue, 'long', FALSE);
 //////        }
 //    }
-
 
     public function behaviors()
     {
@@ -345,7 +352,7 @@ class Requests extends CActiveRecord
             'AutoDateTimeFormatter' => array(
                 'class'     => 'application.components.behaviors.DateTimeFormatterBehavior',
                 'attribute' => array(
-                    array('birthday', 'on' => 'firstCreate'),
+                    array('birthday', 'on' => 'firstCreate, filter'),
                     array('passport_issue', 'on' => 'continueCreate'),
                 )
             ),
@@ -353,12 +360,6 @@ class Requests extends CActiveRecord
                 'class'     => 'application.components.behaviors.UpperCaseBehavior',
                 'attribute' => array('name', 'surname', 'patronymic')
             ),
-            /*'EAdvancedArBehavior'   => array(
-                'class'              => 'application.extensions.EAdvancedArBehavior',
-                'useNullOnTimestamp' => FALSE,
-                'useOnUpdate' => true,
-
-            )*/
         );
     }
 
@@ -390,18 +391,23 @@ class Requests extends CActiveRecord
         // will receive user inputs.
         return array(
             /*----firstCreate---*/
-            // TODO: Добавить filter trim.
-            array('surname, name, patronymic, initialFee, objectTypeId, birthday', 'required', 'on' => 'firstCreate'),
-            array('surname, name, patronymic, initialFee, objectTypeId, birthday', 'filter', 'filter' => 'trim', 'on' => 'firstCreate'),
+            array('surname, name, patronymic, initialFee, objectCost, objectTypeId, birthday', 'required', 'on' => 'firstCreate'),
+            array('surname, name, patronymic, initialFee, objectCost, objectTypeId, birthday', 'filter', 'filter' => 'trim', 'on' => 'firstCreate'),
             array('surname, name, patronymic, summ, initialFee, objectTypeId, birthday', 'unsafe', 'on' => 'continueCreate'),
-            array('surname, patronymic, name', 'length', 'max' => 100, 'min' => 2),
-            array('surname, patronymic, name', 'AlphaValidator', 'allowDash' => TRUE),
-            array('sex, passport_seria, passport_number, objectTypeId, initialFee, summ', 'numerical', 'integerOnly' => TRUE),
+            array('objectCost', 'compare', 'compareAttribute' => 'initialFee', 'operator' => '>', 'allowEmpty' => FALSE, 'message' => '{attribute} должна быть больше первоначального взноса', 'on' => 'firstCreate, filter'),
+            array('initialFee', 'compare', 'compareAttribute' => 'objectCost', 'allowEmpty' => FALSE, 'operator' => '<', 'message' => 'Первоначальный взнос должен быть меньше стоимости объекта', 'on' => 'firstCreate, filter'),
+            array('sex', 'in', 'allowEmpty' => FALSE, 'range' => array(self::SEX_MAN, self::SEX_WOMEN), 'message' => 'Пожалуйста, выберите пол', 'on' => 'firstCreate'),
+            array('objectTypeId', 'in', 'allowEmpty' => FALSE, 'range' => array_keys(ObjectType::getAllInArray()), 'message' => 'Пожалуйста, выберите тип недвижимости', 'on' => 'firstCreate, filter'),
+            array('surname, patronymic, name', 'length', 'max' => 100, 'min' => 2, 'on' => 'firstCreate'),
+            array('surname, patronymic, name', 'AlphaValidator', 'allowDash' => TRUE, 'on' => 'firstCreate'),
+            array('summ', 'default', 'value' => $this->objectCost - $this->initialFee, 'on' => 'firstCreate, filter'),
+
+            array('sex, passport_seria, passport_number, objectTypeId, initialFee, summ, objectCost', 'numerical', 'integerOnly' => TRUE),
             array('passport_seria, passport_number, birthday_place, citizenship, passport_issued, passport_issue, mobile_phone', 'required', 'on' => 'continueCreate'),
             array('mobile_phone', 'safe', 'on' => 'continueCreate'),
             array('birthday_place, citizenship', 'length', 'max' => 250, 'min' => 2),
             array('passport_issued', 'length', 'max' => 255, 'min' => 5),
-            array('birthday', 'date', 'format' => 'yyyy-MM-dd', 'allowEmpty' => FALSE, 'on' => 'firstCreate'),
+            array('birthday', 'date', 'format' => 'yyyy-MM-dd', 'allowEmpty' => FALSE, 'on' => 'firstCreate, filter'),
             array('passport_issue', 'date', 'format' => 'yyyy-MM-dd', 'on' => 'continueCreate'),
             array('passport_issue', 'DateDiffValidator', 'min' => 0, 'max' => 50, 'minDiffItem' => 'd', 'maxDiffItem' => 'y', 'tooMax' => 'Паспорт не может быть выдан больше {value} лет назад', 'on' => 'continueCreate'),
             array('birthday', 'DateDiffValidator', 'min' => 18, 'max' => 100, 'minDiffItem' => 'y', 'maxDiffItem' => 'y', 'tooMax' => 'Максимальный возраст заемщика {value} лет', 'tooMin' => 'Минимальный возраст заемщика {value} лет', 'on' => 'firstCreate'),
@@ -463,16 +469,16 @@ class Requests extends CActiveRecord
             // Plot
             'realestatePlotGet'              => array(self::BELONGS_TO, 'Vocabulary', 'realestate_plot_get', 'alias' => 'voc', 'condition' => 'voc.category=realestate AND voc.column=get'),
             // Condo
-            'realestateCondoGet'              => array(self::BELONGS_TO, 'Vocabulary', 'realestate_condo_get', 'alias' => 'voc', 'condition' => 'voc.category=realestate AND voc.column=get'),
+            'realestateCondoGet'             => array(self::BELONGS_TO, 'Vocabulary', 'realestate_condo_get', 'alias' => 'voc', 'condition' => 'voc.category=realestate AND voc.column=get'),
             // Cottege
-            'realestateCottegeGet'              => array(self::BELONGS_TO, 'Vocabulary', 'realestate_cottege_get', 'alias' => 'voc', 'condition' => 'voc.category=realestate AND voc.column=get'),
+            'realestateCottegeGet'           => array(self::BELONGS_TO, 'Vocabulary', 'realestate_cottege_get', 'alias' => 'voc', 'condition' => 'voc.category=realestate AND voc.column=get'),
 
             // Cars Get
-            'carsGet'              => array(self::BELONGS_TO, 'Vocabulary', 'cars_get', 'alias' => 'voc', 'condition' => 'voc.category=cars AND voc.column=get'),
+            'carsGet'                        => array(self::BELONGS_TO, 'Vocabulary', 'cars_get', 'alias' => 'voc', 'condition' => 'voc.category=cars AND voc.column=get'),
 
             //---Credit---//
             // Type
-            'credit1Type'              => array(self::BELONGS_TO, 'Vocabulary', 'credit_1_type', 'alias' => 'voc', 'condition' => 'voc.category=cars AND voc.column=get'),
+            'credit1Type'                    => array(self::BELONGS_TO, 'Vocabulary', 'credit_1_type', 'alias' => 'voc', 'condition' => 'voc.category=cars AND voc.column=get'),
             //TODO: Card Payment System
             //TODO: Card Type
             //TODO: Card Currency
@@ -494,7 +500,7 @@ class Requests extends CActiveRecord
             'acquiredRealestateCurrency'     => array(self::BELONGS_TO, 'Vocabulary', 'acquired_realestate_currency', 'condition' => 'acquiredRealestateCurrency.category=currency'),
 
             //---Other---//
-            'organizationDecisions'          => array(self::HAS_MANY, 'Decision', 'request_id', 'condition' => 'organizationDecisions.organization_id=' . Yii::app()->user->organization_id, 'order' => 'organizationDecisions.date_created DESC'),
+            'organizationDecision'           => array(self::HAS_ONE, 'Decision', 'request_id', 'condition' => 'organizationDecision.organization_id=' . Yii::app()->user->organization_id),
             'decisions'                      => array(self::HAS_MANY, 'Decision', 'request_id'),
             'comments'                       => array(self::HAS_MANY, 'Comments', 'request_id', 'order' => 'comments.date_created DESC'),
             'files'                          => array(self::HAS_MANY, 'Files', 'request_id'),
@@ -502,6 +508,8 @@ class Requests extends CActiveRecord
             'commentCount'                   => array(self::STAT, 'Comments', 'request_id'),
             'type'                           => array(self::BELONGS_TO, 'ObjectType', 'objectTypeId'),
             'status'                         => array(self::BELONGS_TO, 'Status', 'status_id'),
+            'statusHistory'                  => array(self::HAS_MANY, 'StatusHistory', 'request_id', 'order' => 'date_created'),
+            'statusHistoryOrganization'      => array(self::HAS_MANY, 'StatusHistory', 'request_id', 'order' => 'date_created ASC', 'condition' => 'statusHistoryOrganization.organization_id=' . Yii::app()->user->organization_id),
         );
     }
 
@@ -626,7 +634,7 @@ class Requests extends CActiveRecord
             'earings_regular_2_currency'           => 'Валюта',
             'earings_regular_3_source'             => 'Источник',
             'earings_regular_3_summ'               => 'Сумма',
-            'earings_regular_3_currency'           => 'Валютаy',
+            'earings_regular_3_currency'           => 'Валюта',
             'realestate_type_cottege'              => 'Индивидуальный дом (коттедж, дача)',
             'realestate_type_condo'                => 'Квартира в многоквартирном доме',
             'realestate_type_plot'                 => 'Земельный участок без строений',
@@ -761,42 +769,48 @@ class Requests extends CActiveRecord
         // should not be searched.
 
         $criteria = new CDbCriteria;
-        /*  if (!Yii::app()->user->checkAccess('indexAllRequests')) {
-              $select = Yii::app()->db->createCommand()
-                  ->select('id')
-                  ->from(Users::model()->tableName())
-                  ->where('organization_id='.Yii::app()->user->organization_id)
-                  ->query()
-                  ->readAll();
-              $in = array();
-              foreach($select as $one){
-                  $in[] = $one['id'];
-              }
+        $criteria->with = array('status', 'type');
+        if (Yii::app()->user->organizationType != Organizations::TYPE_ADMIN) {
+            if (Yii::app()->user->organizationType == Organizations::TYPE_AGENT) {
+                if (Yii::app()->user->roleId == Users::ROLE_AGENT_ADMIN) {
+                    $staff = Users::model()->organization(Yii::app()->user->organization_id)->findAll();
+                    $in = array();
+                    foreach ($staff as $one) {
+                        $in[] = $one['id'];
+                    }
+                    $criteria->compare('created_by_user_id', $in);
+                } else
+                    $criteria->compare('created_by_user_id', $this->created_by_user_id);
+            } elseif (Yii::app()->user->organizationType == Organizations::TYPE_BANK) {
+                //TODO: Прикрутить прогон по процентам, срок ипотеки.
+                $filters = Filters::model()->organization(Yii::app()->user->organization_id)->findAll();
+                foreach ($filters as $filter) {
+                    $condition = "objectTypeId=$filter->objectTypeId AND summ>$filter->min_summ AND summ<$filter->max_summ AND age>$filter->min_borrower_age AND age<$filter->max_borrower_age";
+                    $criteria->addCondition($condition, 'OR');
+                }
+            }
+        }
+        if (!empty($this->fullName))
+            /*  if (!empty($this->fullName)) {
+                  //В фильтр id_author у нас есть возможность писать любой критерий поиска по имени, фамилии или отчеству
+                  $criteria->condition = 'surname LIKE :aid
+                                      OR name LIKE :aid
+                                      OR patronymic LIKE :aid
+                                      OR CONCAT(surname, " ", name, " ", patronymic) LIKE :aid';
 
-              $criteria->compare('created_by_user_id', $in);
-          } else {
-              $criteria->compare('created_by_user_id', $this->created_by_user_id);
-          }*/
-        /*  if (!empty($this->fullName)) {
-              //В фильтр id_author у нас есть возможность писать любой критерий поиска по имени, фамилии или отчеству
-              $criteria->condition = 'surname LIKE :aid
-                                  OR name LIKE :aid
-                                  OR patronymic LIKE :aid
-                                  OR CONCAT(surname, " ", name, " ", patronymic) LIKE :aid';
+                  if (!count($criteria->params)) {
+                      $criteria->params = array();
+                  }
 
-              if (!count($criteria->params)) {
-                  $criteria->params = array();
-              }
-
-              $criteria->params[':aid'] = '%' . $this->fullName . '%';*/
+                  $criteria->params[':aid'] = '%' . $this->fullName . '%';*/
 //        if (!empty($this->fullName)) {
 //        $criteria->compare('name', $this->fullName, TRUE, 'OR', FALSE);
 //        $criteria->compare('surname', $this->fullName, TRUE, 'OR', FALSE);
 //        $criteria->compare('patronymic', $this->fullName, TRUE, 'OR', FALSE);
 
 //        }
-        $criteria->compare(new CDbExpression("CONCAT(surname, ' ', name, ' ', patronymic)"), $this->fullName, TRUE);
-        $criteria->compare('id', $this->id);
+//        $criteria->compare(new CDbExpression("CONCAT(surname, ' ', name, ' ', patronymic)"), $this->fullName, TRUE);
+            $criteria->compare('id', $this->id);
 //        $criteria->compare('surname', $this->surname, TRUE);
 //        $criteria->compare('patronymic', $this->patronymic, TRUE);
 //        $criteria->compare('name', $this->name, TRUE);
@@ -815,7 +829,10 @@ class Requests extends CActiveRecord
         $criteria->compare('date_created', $this->date_created, TRUE);
 
         return new CActiveDataProvider($this, array(
-            'criteria' => $criteria,
+            'criteria'   => $criteria,
+            'pagination' => array(
+                'pageSize' => 20
+            ),
             /*'sort'     => array(
                 'defaultOrder' => 't.id DESC',
                 'attributes'   => array(

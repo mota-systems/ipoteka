@@ -18,7 +18,7 @@ return array(
         'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Менеджер Агента',
         'children'    => array(
-            'guest', 'viewOwnRequest', 'viewAllComments', 'createRequest', 'sendComment', 'uploadDocument', 'indexComment'
+            'guest', 'viewOwnRequest', 'uploadFileComment','viewAllComments', 'createRequest', 'sendComment', 'uploadDocument', 'indexComment'
         ),
         'bizRule'     => NULL,
         'data'        => NULL
@@ -145,6 +145,12 @@ return array(
         'bizRule'     => NULL,
         'data'        => NULL
     ),
+    'uploadFileComment'                 => array(
+        'type'        => CAuthItem::TYPE_OPERATION,
+        'description' => 'Оставить комментарий заявок',
+        'bizRule'     => NULL,
+        'data'        => NULL
+    ),
     'makeDeal'                    => array(
         'type'        => CAuthItem::TYPE_OPERATION,
         'description' => 'Совершить сделку',
@@ -175,7 +181,7 @@ return array(
     'viewOwnRequest'              => array(
         'type'        => CAuthItem::TYPE_TASK,
         'description' => 'Просмотр своей заявки',
-        'bizRule'     => 'return Yii::app()->user->id==$params["request"]->author->id',
+        'bizRule'     => 'return Yii::app()->user->id==$params["author"]',
         'children'    => array(
             'viewRequest'
         ),

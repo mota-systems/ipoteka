@@ -3,6 +3,8 @@
 // uncomment the following to define a path alias
 // Yii::setPathOfAlias('local','path/to/local-folder');
 Yii::setPathOfAlias('bootstrap', dirname(__FILE__) . '/../extensions/bootstrap');
+Yii::setPathOfAlias('requests', dirname(__FILE__) . '/../modules/requests');
+
 // This is the main Web application configuration. Any writable
 // CWebApplication properties can be configured here.
 return array(
@@ -21,6 +23,7 @@ return array(
         'application.components.behaviors.*',
         'application.components.validators.*',
         'application.components.widgets.*',
+        'application.components.helpers.*',
         'bootstrap.widgets.*',
         'bootstrap.widgets.input.*',
     ),
@@ -111,7 +114,7 @@ return array(
                 ),
                 array(
                     'class'     => 'application.extensions.yii-debug-toolbar-master.yii-debug-toolbar.YiiDebugToolbarRoute',
-                    'ipFilters' => array('127.0.0.1', '178.236.140.20'),
+                    'ipFilters' => array('127.0.0.1', '178.236.140.20', '217.71.236.162'),
                 ),
 
             ),

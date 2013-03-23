@@ -79,13 +79,13 @@ $this->widget('bootstrap.widgets.TbAlert', array(
         $dataProvider = new CActiveDataProvider('Comments', array(
             'criteria'   => array(
                 'condition' => "request_id=$model->id AND ((recipient_id=$org_id AND organization_id={$model->author->organization_id}) OR (recipient_id={$model->author->organization_id} AND organization_id=$org_id))",
-                'order'     => 'date_created DESC',
+                'order'     => 'date_created ASC',
             ),
             'pagination' => array(
                 'pageSize' => 10,
             ),));
 //        $tabs[$org_name] = array('id' => $org_id, 'content' => $this->renderPartial('//comments/index', array('dataProvider' => $dataProvider, 'model' => new Comments), TRUE));
-        $tabs[] = array('label' => $org_name, 'content' => $this->renderPartial('//comments/index', array('dataProvider' => $dataProvider, 'model' => new Comments, 'recipient_id' => $org_id), TRUE));
+        $tabs[] = array('label' => $org_name, 'content' => $this->renderPartial('//comments/index', array('dataProvider' => $dataProvider, 'model' => new Comments, 'recipient_id' => $org_id, 'request_id'=>$model->id), TRUE));
 //        $tabs[] = array('active'=>!$id ? TRUE : FALSE,'label' => $org_name, 'content' => $this->renderPartial(Yii::app()->theme->viewPath.'/comments/index', array('dataProvider' => $dataProvider, 'model' => new Comments), TRUE));
         $id++;
     }
@@ -103,7 +103,7 @@ $this->widget('bootstrap.widgets.TbAlert', array(
     $dataProvider = new CActiveDataProvider('Comments', array(
             'criteria'   => array(
                 'condition' => "request_id=$model->id AND recipient_id={$model->author->organization->id} AND organization_id=" . Yii::app()->user->organization_id,
-                'order'     => 'date_created DESC',
+                'order'     => 'date_created ASC',
             ),
             'pagination' => array(
                 'pageSize' => 10

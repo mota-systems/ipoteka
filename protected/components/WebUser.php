@@ -52,6 +52,11 @@ class WebUser extends CWebUser
             return $user->phio;
     }
 
+    public function getStuff() {
+        if($user = $this->getModel())
+           $users = Users::model()->findAllByAttributes(array('organization_id'=>$this->getOrganization_id()));
+    }
+
     private function getModel()
     {
         if (!$this->isGuest && $this->_model === NULL) {

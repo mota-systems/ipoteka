@@ -98,7 +98,7 @@ $this->widget('bootstrap.widgets.TbAlert', array(
                 'pageSize' => 10,
             ),));
 //        $tabs[$org_name] = array('id' => $org_id, 'content' => $this->renderPartial('//comments/index', array('dataProvider' => $dataProvider, 'model' => new Comments), TRUE));
-        $tabs[] = array('label' => $org_name, 'content' => $this->renderPartial('//comments/index', array('dataProvider' => $dataProvider, 'model' => new Comments, 'recipient_id' => $org_id), TRUE));
+        $tabs[] = array('label' => $org_name, 'content' => $this->renderPartial('//comments/index', array('dataProvider' => $dataProvider, 'model' => new Comments, 'recipient_id' => $org_id, 'request_id'=>$model->id), TRUE));
 //        $tabs[] = array('active'=>!$id ? TRUE : FALSE,'label' => $org_name, 'content' => $this->renderPartial(Yii::app()->theme->viewPath.'/comments/index', array('dataProvider' => $dataProvider, 'model' => new Comments), TRUE));
         $id++;
     }
@@ -123,6 +123,6 @@ $this->widget('bootstrap.widgets.TbAlert', array(
             )
         )
     );
-    $this->renderPartial('//comments/index', array('dataProvider' => $dataProvider, 'model' => new Comments));
+    $this->renderPartial('//comments/index', array('dataProvider' => $dataProvider, 'model' => new Comments, 'request_id'=>$model->id));
 }?>
 </div>

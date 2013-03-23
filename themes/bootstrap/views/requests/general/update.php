@@ -17,5 +17,14 @@
 */?>
 
 <h2><?=$model->fullname?></h2>
+<?php $this->widget('bootstrap.widgets.TbDetailView', array(
+    'data'       => $model,
+    'attributes' => array(
+        'summ',
+        'initialFee',
+        'type.type',
+        'age',
+    ),
+))?>
 
-<?php echo $this->renderPartial('_form', array('model'=>$model)); ?>
+<?php echo $this->renderPartial('/general/update/page'.$page, array('model'=>$model)); ?>

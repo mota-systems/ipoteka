@@ -3,15 +3,7 @@
 /* @var $model Requests */
 /* @var $form TbActiveForm */
 ?>
-<?php $this->widget('bootstrap.widgets.TbDetailView', array(
-    'data'       => $model,
-    'attributes' => array(
-        'summ',
-        'initialFee',
-        'type.type',
-        'age',
-    ),
-))?>
+
     <?php $form = $this->beginWidget('bootstrap.widgets.TbActiveForm', array(
     'id'                     => 'requests-form',
     'enableAjaxValidation'   => TRUE,

@@ -21,7 +21,9 @@
 		<?php echo $form->textField($model,'comment',array('size'=>60,'maxlength'=>500)); ?>
 		<?php echo $form->error($model,'comment'); ?>
 	</div>
-
+<!--    --><?// if(Yii::app()->user->checkAccess('uploadFileComment')) {?>
+<!--        --><?//=$form->fileField($model, '')
+//    <? } ?>
 	<div class="row buttons">
 		<?php echo CHtml::submitButton($model->isNewRecord ? 'Create' : 'Save'); ?>
 	</div>

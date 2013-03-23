@@ -45,7 +45,7 @@ class Organizations extends CActiveRecord
         );
     }
 
-    public function banks($bank = NULL)
+    public function bank($bank = NULL)
     {
         $criteria = is_null($bank) ?
             array('condition' => 'type=' . self::TYPE_BANK) :
@@ -54,11 +54,11 @@ class Organizations extends CActiveRecord
         return $this;
     }
 
-    public function agents($agent = NULL)
+    public function agent($agent = NULL)
     {
         $criteria = is_null($agent) ?
             array('condition' => 'type=' . self::TYPE_AGENT) :
-            array('condition' => array('type=' . self::TYPE_AGENT, 'id=' . $agent));
+            array('condition' => 'type=' . self::TYPE_AGENT.  ' AND id=' . $agent);
         $this->getDbCriteria()->mergeWith($criteria);
         return $this;
     }

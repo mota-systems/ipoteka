@@ -4,8 +4,8 @@
         <div class="content span9">
             <?php echo $content; ?>
         </div>
-        <? if ($this->menu OR $this->documentsModel) { ?>
-            <aside>
+        <? if ($this->menu OR isset($this->documentsModel)) { ?>
+            <aside class='span3'>
                 <?php
                 $this->beginWidget('zii.widgets.CPortlet', array(
                     'title' => 'Операции',

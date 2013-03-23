@@ -4,14 +4,14 @@
  * This is the model class for table "filters".
  *
  * The followings are the available columns in table 'filters':
- * @property integer $id
- * @property integer $organization_id
- * @property integer $fee
- * @property integer $interest_rate
- * @property integer $min_period
- * @property integer $max_period
- * @property integer $min_borrower_age
- * @property integer $max_borrower_age
+ * @property integer       $id
+ * @property integer       $organization_id
+ * @property integer       $fee
+ * @property integer       $interest_rate
+ * @property integer       $min_period
+ * @property integer       $max_period
+ * @property integer       $min_borrower_age
+ * @property integer       $max_borrower_age
  *
  * The followings are the available model relations:
  * @property Organizations $organization
@@ -21,7 +21,9 @@ class Filters extends CActiveRecord
 {
     /**
      * Returns the static model of the specified AR class.
+     *
      * @param string $className active record class name.
+     *
      * @return Filters the static model class
      */
     public static function model($className = __CLASS__)
@@ -37,10 +39,26 @@ class Filters extends CActiveRecord
         return 'filters';
     }
 
+    public function organization($org_id)
+    {
+        $this->getDbCriteria()->mergeWith(array(
+            'condition' => 'organization_id=:org_id',
+            'params'    => array(':org_id' => $org_id),
+        ));
+        return $this;
+    }
+
     public function objectTypeId($type)
     {
-        $this->dbCriteria->mergeWith(array('condition'=>'objectTypeId='.$type));
+        $this->dbCriteria->mergeWith(array(
+            'condition' => 'objectTypeId=:type',
+            'params'    => array(':type' => $type),
+        ));
         return $this;
+    }
+
+    public function checkIt($data)
+    {
     }
 
     /**
@@ -76,12 +94,12 @@ class Filters extends CActiveRecord
     public function attributeLabels()
     {
         return array(
-            'id' => 'ID',
-            'organization_id' => 'Организация',
-            'fee' => 'Взнос',
-            'interest_rate' => 'Ставка',
-            'min_period' => 'Минимальный срок',
-            'max_period' => 'Максимальный срок',
+            'id'               => 'ID',
+            'organization_id'  => 'Организация',
+            'fee'              => 'Взнос',
+            'interest_rate'    => 'Ставка',
+            'min_period'       => 'Минимальный срок',
+            'max_period'       => 'Максимальный срок',
             'min_borrower_age' => 'Минимальный возраст заемщика',
             'max_borrower_age' => 'Максимальный возраст заемщика',
         );

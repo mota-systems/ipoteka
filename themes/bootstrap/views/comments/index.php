@@ -13,10 +13,10 @@ $this->menu=array(
 );
 */
 ?>
-
-<?php $this->widget('zii.widgets.CListView', array(
+    <?php $this->widget('zii.widgets.CListView', array(
     'dataProvider' => $dataProvider,
-    'itemView'     => Yii::app()->theme->viewPath . '/comments/_view',
+    'template'=>'{items} {pager}',
+    'itemView'     => '//comments/_view',
     'emptyText'    => 'Нет комментариев.'
 ));?>
 <? if (Yii::app()->user->hasFlash('commentSendOk')) {
@@ -25,8 +25,9 @@ $this->menu=array(
 <div class="form">
 
     <?php $form = $this->beginWidget('TbActiveForm', array(
-    'id'                   => 'comments-form',
-    'enableAjaxValidation' => FALSE,
+        'id'                   => 'comments-form',
+        'enableAjaxValidation' => FALSE,
+        'action'               => '/requests/'.Yii::app()->getModule('requests')->defaultController.'/comment/id/' . $request_id
     )); ?>
 
     <?php echo $form->hiddenField($model, 'recipient_id', array('value' => $recipient_id));?>
@@ -34,11 +35,11 @@ $this->menu=array(
     <?php echo $form->textFieldRow($model, 'comment', array('size' => 60, 'maxlength' => 500)); ?>
     <div class="control-group">
         <?php $this->widget('bootstrap.widgets.TbButton', array(
-        'buttonType' => 'submit',
-        'type'       => 'small',
-        'label'      => 'Оставить комментарий',
-        'url'        => '/comments/add',
-    )); ?>
+            'buttonType' => 'submit',
+            'type'       => 'small',
+            'label'      => 'Оставить комментарий',
+//            'url'        => '/requests/bank/comment/id/' . $request_id,
+        )); ?>
     </div>
     <?php $this->endWidget(); ?>
 

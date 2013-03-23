@@ -4,14 +4,13 @@
 ?>
 
 <div class="view">
-
     <?
     $formatter = new CDateFormatter('ru_ru');
     $dateCreated = $formatter->formatDateTime($data->date_created, 'long', 'short');
     ?>
 
 	<b><?php echo CHtml::encode($data->getAttributeLabel('created_by_user_id')); ?>:</b>
-	<?php echo CHtml::encode($data->created_by_user_id); ?>
+	<?php echo CHtml::encode($data->author->phio); ?>
 	<br />
 
 	<b><?php echo CHtml::encode($data->getAttributeLabel('comment')); ?>:</b>

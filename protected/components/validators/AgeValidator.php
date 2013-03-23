@@ -22,6 +22,7 @@ class AgeValidator extends CValidator
     {
         $dateFormatter = new DateTime($object->$attribute);
         $diff = $dateFormatter->diff(new DateTime)->y;
+        $object->$attribute = $diff;
         if (!empty($this->min) and $diff < $this->min) {
             $message = $this->message !== NULL ? $this->message : "Минимальный возраст заемщика $this->min лет";
             $this->addError($object, $attribute, $message);

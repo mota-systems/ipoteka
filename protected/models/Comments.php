@@ -39,13 +39,16 @@ class Comments extends CActiveRecord
                 'class' => 'application.components.behaviors.AuthorBehavior',
                 'authorAttribute' => 'created_by_user_id',
             ),
+//            'UploadableFile' => array(
+//                'class' => 'application.components.UploadableFileBehavior',
+//            ),
         );
     }
 
-    public function beforeSave()
+    public function onBeforeSave($event)
     {
         $this->organization_id = Yii::app()->user->organization_id;
-        parent::beforeSave();
+        parent::onBeforeSave($event);
     }
 
     /**
@@ -65,7 +68,8 @@ class Comments extends CActiveRecord
         // will receive user inputs.
         return array(
             array('comment', 'length', 'max' => 500),
-            array('recipient_id', 'exist', 'className'=>'organizations', 'allowEmpty'=>FALSE, 'attributeName'=>'id', 'message'=>'Ошибка. Организация, которой вы хотите отправить сообщение, не существует.'),
+            array('recipient_id, created_by_user_id, organization_id, request_id', 'numerical', 'integerOnly'=>TRUE),
+            array('recipient_id', 'exist', 'className'=>'Organizations', 'allowEmpty'=>FALSE, 'attributeName'=>'id', 'message'=>'Ошибка. Организация, которой вы хотите отправить сообщение, не существует.'),
             // The following rule is used by search().
             // Please remove those attributes that should not be searched.
             array('request_id, created_by_user_id, organization_id, date_created', 'safe', 'on' => 'search'),
@@ -80,7 +84,7 @@ class Comments extends CActiveRecord
         // NOTE: you may need to adjust the relation name and the related
         // class name for the relations automatically generated below.
         return array(
-            'createdByUser' => array(self::BELONGS_TO, 'Users', 'created_by_user_id'),
+            'author' => array(self::BELONGS_TO, 'Users', 'created_by_user_id'),
             'organization' => array(self::BELONGS_TO, 'Organizations', 'organization_id'),
             'request' => array(self::BELONGS_TO, 'Requests', 'request_id'),
             'files'=>array(self::HAS_MANY, 'CommentsFiles', 'comment_id'),

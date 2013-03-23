@@ -45,6 +45,14 @@ class Users extends CActiveRecord
         return $this->roles->name;
     }
 
+    public function organization($org_id){
+        $this->getDbCriteria()->mergeWith(array(
+            'condition'=>'organization_id=:org_id',
+            'params'=>array(':org_id'=>$org_id),
+        ));
+        return $this;
+    }
+
     /**
      * @return string the associated database table name
      */
@@ -153,7 +161,7 @@ class Users extends CActiveRecord
         // should not be searched.
         $criteria = new CDbCriteria;
 
-        if (Yii::app()->user->roleId == Roles::TYPE_ADMIN) {
+        if (Yii::app()->user->organizationType == Roles::TYPE_ADMIN) {
             if ($this->organization_id) {
                 $criteria->compare('organization_id', $this->organization_id);
             }

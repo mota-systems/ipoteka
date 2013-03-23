@@ -33,8 +33,12 @@ class DateTimeFormatterBehavior extends CActiveRecordBehavior
                 foreach ($this->attribute as $attr) {
                     if (is_array($attr) AND array_key_exists('on', $attr)) {
                         $this->_formatScenario = $attr['on'];
+                        if (!is_array($this->_formatScenario)) {
+                            $this->_formatScenario = explode(',', $this->_formatScenario);
+                            $this->_formatScenario = array_map('trim', $this->_formatScenario);
+                        }
                         unset($attr['on']);
-                        if ($this->_formatScenario != $this->_modelScenario) {
+                        if (!in_array($this->_modelScenario, $this->_formatScenario)) {
                             continue;
                         }
                         $attr = explode(',', array_pop($attr));

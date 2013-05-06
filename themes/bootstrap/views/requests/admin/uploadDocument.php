@@ -12,7 +12,7 @@
         'title'    => 'Загрузить документ',
         'autoOpen' => TRUE,
         'modal'    => 'true',
-        'width'    => 'auto',
+        'width'   => 'auto',
         'height'   => 'auto',
     ),
 ));*/

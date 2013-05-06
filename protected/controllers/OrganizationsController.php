@@ -7,6 +7,7 @@ class OrganizationsController extends BaseController
      * using two-column layout. See 'protected/views/layouts/column2.php'.
      */
     public $layout = '//layouts/column2';
+    public $defaultAction = 'admin';
 
     /**
      * @return array action filters
@@ -36,16 +37,6 @@ class OrganizationsController extends BaseController
         );
     }
 
-    /**
-     * Displays a particular model.
-     * @param integer $id the ID of the model to be displayed
-     */
-    public function actionView($id)
-    {
-        $this->render('view', array(
-            'model' => $this->loadModel($id),
-        ));
-    }
 
     /**
      * Creates a new model.
@@ -56,13 +47,14 @@ class OrganizationsController extends BaseController
         $model = new Organizations;
 
         // Uncomment the following line if AJAX validation is needed
-        // $this->performAjaxValidation($model);
+        $this->performAjaxValidation($model);
 
         if (isset($_POST['Organizations'])) {
             $model->attributes = $_POST['Organizations'];
             if ($model->save()) {
+                Yii::app()->user->setFlash('success', "Организация  {$model->name} успешно создана.");
                 Yii::app()->cache->delete(Organizations::ALL_IN_ARRAY_CACHE);
-                $this->redirect(array('view', 'id' => $model->id));
+                $this->redirect(array('admin'));
             }
         }
 
@@ -74,6 +66,7 @@ class OrganizationsController extends BaseController
     /**
      * Updates a particular model.
      * If update is successful, the browser will be redirected to the 'view' page.
+     *
      * @param integer $id the ID of the model to be updated
      */
     public function actionUpdate($id)
@@ -81,13 +74,14 @@ class OrganizationsController extends BaseController
         $model = $this->loadModel($id);
 
         // Uncomment the following line if AJAX validation is needed
-        // $this->performAjaxValidation($model);
+        $this->performAjaxValidation($model);
 
         if (isset($_POST['Organizations'])) {
             $model->attributes = $_POST['Organizations'];
             if ($model->save()) {
                 Yii::app()->cache->delete(Organizations::ALL_IN_ARRAY_CACHE);
-                $this->redirect(array('view', 'id' => $model->id));
+                Yii::app()->user->setFlash('success', "Организация {$model->name} успешно отредактирована.");
+                $this->redirect(array('admin'));
             }
         }
 
@@ -96,38 +90,30 @@ class OrganizationsController extends BaseController
         ));
     }
 
+    public function actionView($id)
+    {
+        $model = $this->loadModel($id);
+        $this->render('view', array('model' => $model));
+    }
+
     /**
      * Deletes a particular model.
      * If deletion is successful, the browser will be redirected to the 'admin' page.
+     *
      * @param integer $id the ID of the model to be deleted
      */
     public function actionDelete($id)
     {
-        $this->loadModel($id)->delete();
+        $model = $this->loadModel($id);
+        $name = $model->name;
+        $model->delete();
         Yii::app()->cache->delete(Organizations::ALL_IN_ARRAY_CACHE);
+        Yii::app()->user->setFlash('success', "Организация $name успешно удалена.");
         // if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
         if (!isset($_GET['ajax']))
             $this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('admin'));
     }
 
-    /**
-     * Lists all models.
-     */
-    public function actionIndex()
-    {
-        $model = new Organizations('search');
-        $model->unsetAttributes(); // clear any default values
-        if (isset($_GET['Organizations']))
-            $model->attributes = $_GET['Organizations'];
-
-        $this->render('admin', array(
-            'model' => $model,
-        ));
-        /*$dataProvider=new CActiveDataProvider('Organizations');
-        $this->render('index',array(
-            'dataProvider'=>$dataProvider,
-        ));*/
-    }
 
     /**
      * Manages all models.
@@ -147,7 +133,9 @@ class OrganizationsController extends BaseController
     /**
      * Returns the data model based on the primary key given in the GET variable.
      * If the data model is not found, an HTTP exception will be raised.
+     *
      * @param integer $id the ID of the model to be loaded
+     *
      * @return Organizations the loaded model
      * @throws CHttpException
      */
@@ -155,12 +143,13 @@ class OrganizationsController extends BaseController
     {
         $model = Organizations::model()->findByPk($id);
         if ($model === NULL)
-            throw new CHttpException(404, 'The requested page does not exist.');
+            throw new CHttpException(404, 'Такой организации не существует.');
         return $model;
     }
 
     /**
      * Performs the AJAX validation.
+     *
      * @param Organizations $model the model to be validated
      */
     protected function performAjaxValidation($model)

@@ -3,12 +3,12 @@
 /* @var $model Organizations */
 
 $this->breadcrumbs=array(
-	'Организации'=>array('index'),
+	'Организации'=>array('admin'),
 	'Добавить организацию',
 );
 
 $this->menu=array(
-	array('label'=>'Список организаций', 'url'=>array('index')),
+	array('label'=>'Список организаций', 'url'=>array('admin')),
 );
 ?>
 

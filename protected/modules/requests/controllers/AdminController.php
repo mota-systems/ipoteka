@@ -22,9 +22,10 @@ class AdminController extends DefaultController
             'delete'       => 'requests.components.actions.DeleteAction',
             'create'       => 'requests.components.actions.CreateAction',
             'checkfilters' => 'requests.components.actions.CheckFiltersAction',
+            'statistics'   => 'requests.components.actions.StatisticsAction',
             'comment'      => array(
-                'class'=>'requests.components.actions.CommentAction',
-                'scenario'=>'agent',
+                'class'    => 'requests.components.actions.CommentAction',
+                'scenario' => 'agent',
             ),
         );
     }
@@ -45,7 +46,6 @@ class AdminController extends DefaultController
             ),
         );
     }
-
 
 
     /**

@@ -18,7 +18,7 @@ return array(
         'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Менеджер Агента',
         'children'    => array(
-            'guest', 'viewOwnRequest', 'uploadFileComment','viewAllComments', 'createRequest', 'sendComment', 'uploadDocument', 'indexComment'
+            'guest', 'viewOwnRequest', 'indexRequest', 'uploadFileComment','viewAllComments', 'createRequest', 'deleteRequest', 'editRequest', 'sendComment', 'uploadDocument', 'indexComment'
         ),
         'bizRule'     => NULL,
         'data'        => NULL
@@ -27,7 +27,7 @@ return array(
         'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Управляющий агента',
         'children'    => array(
-            'agentManager', 'viewOwnOrganizationRequest', 'viewStatistic', 'adminOwnUser', // позволим модератору всё, что позволено пользователю
+            'agentManager', 'viewOwnOrganizationRequest', 'viewStatistic', 'adminOwnUser', 'adminUser' // позволим модератору всё, что позволено пользователю
         ),
         'bizRule'     => NULL,
         'data'        => NULL
@@ -45,7 +45,7 @@ return array(
         'type'        => CAuthItem::TYPE_ROLE,
         'description' => 'Управляющий банка',
         'children'    => array(
-            'overrideConsiderRequest', 'bankManager', 'viewStatistic', 'adminOwnUser', 'adminUser', 'editFilter' // позволим админу всё, что позволено модератору
+            'overrideConsiderRequest', 'indexRequest','bankManager', 'viewStatistic', 'adminOwnUser', 'adminUser', 'editFilter' // позволим админу всё, что позволено модератору
         ),
         'bizRule'     => NULL,
         'data'        => NULL
@@ -181,7 +181,7 @@ return array(
     'viewOwnRequest'              => array(
         'type'        => CAuthItem::TYPE_TASK,
         'description' => 'Просмотр своей заявки',
-        'bizRule'     => 'return Yii::app()->user->id==$params["author"]',
+        'bizRule'     => 'return true;',
         'children'    => array(
             'viewRequest'
         ),

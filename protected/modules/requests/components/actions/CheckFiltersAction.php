@@ -23,9 +23,10 @@ class CheckFiltersAction extends CAction
         foreach ($organizations as $bank) {
             $filters = $bank->filters;
             if (!count($filters)) {
-                $model = new Requests('filter');
-                $model->addError('objectTypeId', 'Не дает займы по выбранному типу объекта');
-                $results[$bank->name] = CHtml::errorSummary($model, FALSE);
+//                $model = new Requests('filter');
+//                $model->addError('objectTypeId', 'Не дает займы по выбранному типу объекта');
+//                $results[$bank->name] = CHtml::errorSummary($model, FALSE);
+                $results[$bank->name] = TRUE;
             } else {
                 foreach ($filters as $filter) {
                     $model = new Requests('filter');

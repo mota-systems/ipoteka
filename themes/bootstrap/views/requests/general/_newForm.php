@@ -22,7 +22,7 @@ $form = $this->beginWidget('bootstrap.widgets.TbActiveForm', array(
 ?>
 
 <div class='pull-left request-form'>
-    <h2>Новая заявка</h2>
+    <h3>Новая заявка</h3>
     <p class="note">Поля, отмеченные <span class="required">*</span> обязательны для заполнения.</p>
 
     <?php echo $form->errorSummary($model); ?>
@@ -36,17 +36,26 @@ $form = $this->beginWidget('bootstrap.widgets.TbActiveForm', array(
     <?php echo $form->dropDownListRow($model, 'sex', array(0 => 'Выберите пол', Requests::SEX_MAN => 'Мужчина', Requests::SEX_WOMEN => 'Женщина'), array('options' => array('0' => array('disabled' => TRUE)))); ?>
 
     <?php echo $form->textFieldRow($model, 'objectCost', array('size' => 60, 'maxlength' => 100)) ?>
-    <?php echo $form->textFieldRow($model, 'initialFee') ?>
+    <!--<?php echo $form->textFieldRow($model, 'initialFee') ?>-->
+
+
+    <div class="control-group">
+        <label class="control-label required" for="Requests_summ">П/взнос</label>
+            <div class="controls">
+                <div class="input-append">
+                    <input name="Requests[initialFee]" id="Requests_initialFee" type="text"/>
+                    <span class="add-on text-center request-percent">%</span>
+                </div>
+                <span class="help-inline error" id="Requests_initialFee_em_" style="display: none"/>
+            </div>
+    </div>
 
     <div class="control-group no-validation">
         <label class="control-label" for="Requests_summ">Сумма ипотеки</label>
 
         <div class="controls">
 
-            <div class="input-append">
-                <span class="uneditable-input request-summ"></span>
-                <span class="add-on text-center request-percent">%</span>
-            </div>
+            <span class="uneditable-input request-summ"></span>
             <span class="help-inline error" id="Requests_summ_em_"></span>
         </div>
     </div>

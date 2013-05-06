@@ -2,6 +2,9 @@
     <h3>Данные о банках</h3>
     <table class='table-condensed'>
         <? $buttonView = FALSE ?>
+        <? if (!count($filters)) { ?>
+            <p> Пожалуйста, сначала добавьте в систему хотя бы один банк.</p>
+        <? } ?>
         <? foreach ($filters as $bank => $result) { ?>
             <? if ($result === TRUE) {
                 $buttonView = TRUE;
@@ -34,12 +37,12 @@
             <tr>
                 <td colspan='2' class='pagination-centered'>
                     <?php
-                    //TODO: не работает кнопка добавить клиента!
                     $this->widget('bootstrap.widgets.TbButton', array(
-                        'buttonType' => 'submit',
-                        'icon'       => 'icon-plus',
-                        'label'      => 'Добавить клиента',
-                        'type'       => 'success' // null, 'primary', 'info', 'success', 'warning', 'danger' or 'inverse'
+                        'buttonType'  => 'submit',
+                        'icon'        => 'icon-plus',
+                        'label'       => 'Добавить клиента',
+                        'type'        => 'success', // null, 'primary', 'info', 'success', 'warning', 'danger' or 'inverse'
+//                        'htmlOptions' => array('class' => 'request-add-client')
                     ));
                     ?>
                 </td>

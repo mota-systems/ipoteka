@@ -12,6 +12,8 @@ class RequestsModule extends CWebModule
 		$this->setImport(array(
 			'requests.models.*',
 			'requests.components.*',
+			'requests.modules.*',
+			'requests.modules.documents.models.*',
 		));
         if(Yii::app()->user->role==Users::ROLE_ADMIN)
             $this->defaultController = 'admin';
@@ -19,10 +21,6 @@ class RequestsModule extends CWebModule
             $this->defaultController = 'agent';
         else
             $this->defaultController = 'bank';
-           /*     $urlManager = Yii::app()->urlManager;
-        $this->_rules['requests/<action:\w+>']='requests/default/<action>';
-        $this->_rules['requests/<action:\w+>/<id:\d+>']='requests/default/<action>';
-        $urlManager->addRules($this->_rules);*/
 	}
 
 	public function beforeControllerAction($controller, $action)

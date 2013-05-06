@@ -6,24 +6,28 @@
 
 <div class="form">
 
-<?php $form=$this->beginWidget('TbActiveForm', array(
-	'id'=>'organizations-form',
-	'enableAjaxValidation'=>false,
+    <?php $form = $this->beginWidget('bootstrap.widgets.TbActiveForm', array(
+        'id'                   => 'organizations-form',
+        'enableAjaxValidation'   => TRUE,
+        'type'                   => 'horizontal',
+        'inlineErrors'           => TRUE,
 
-)); ?>
+    )); ?>
 
 
-	<?php echo $form->errorSummary($model); ?>
+    <?php echo $form->errorSummary($model); ?>
 
-		<?php echo $form->textFieldRow($model,'name',array('size'=>60,'maxlength'=>255)); ?>
-		<?php echo $form->dropDownListRow($model,'type', array(Organizations::TYPE_AGENT=>'Агент', Organizations::TYPE_BANK=>'Банк', Organizations::TYPE_ADMIN=>'Администрация')); ?>
+    <?php echo $form->textFieldRow($model, 'name', array('size' => 60, 'maxlength' => 255)); ?>
 
-	<div class="controls">
-		<?php $this->widget('bootstrap.widgets.TbButton', array(
-            'label'=>$model->isNewRecord ? 'Создать' : 'Сохранить'
-    )) ?>
-	</div>
+    <?php echo $form->dropDownListRow($model, 'type', array(Organizations::TYPE_AGENT => 'Агент', Organizations::TYPE_BANK => 'Банк', Organizations::TYPE_ADMIN => 'Администрация')); ?>
 
-<?php $this->endWidget(); ?>
+    <div class="controls">
+        <?php $this->widget('bootstrap.widgets.TbButton', array(
+            'label'      => $model->isNewRecord ? 'Создать' : 'Сохранить',
+            'buttonType' => 'submit',
+        )) ?>
+    </div>
+
+    <?php $this->endWidget(); ?>
 
 </div><!-- form -->

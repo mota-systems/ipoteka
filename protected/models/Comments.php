@@ -1,5 +1,6 @@
 <?php
-
+//Yii::import('requests.components.MultiUploadableFileBehavior');
+//Yii::app()->getModule('requests');
 /**
  * This is the model class for table "comments".
  *
@@ -18,6 +19,8 @@
  */
 class Comments extends CActiveRecord
 {
+
+    public $formFiles;
     /**
      * Returns the static model of the specified AR class.
      * @param string $className active record class name.
@@ -38,16 +41,23 @@ class Comments extends CActiveRecord
             'AutoAuthorBehavior' => array(
                 'class' => 'application.components.behaviors.AuthorBehavior',
                 'authorAttribute' => 'created_by_user_id',
+                'organizationAttribute' => 'organization_id',
             ),
-//            'UploadableFile' => array(
-//                'class' => 'application.components.UploadableFileBehavior',
-//            ),
+            'MultiUploadableFile' => array(
+                'class' => 'requests.components.behaviors.MultiUploadableFileBehavior',
+                'attributeName'=>'formFiles',
+                'savePathAlias'=>'webroot.files',
+                'prefix'=>'file',
+                'scenarios'=>array('insert', 'update', 'agent', 'bank', 'admin'),
+                'fileTypes'     => 'doc, png, pdf, xls, docx, jpg,txt, docx, xlsx, bmp',
+                'resizePreview' => FALSE,
+            ),
         );
     }
 
     public function onBeforeSave($event)
     {
-        $this->organization_id = Yii::app()->user->organization_id;
+//        $this->organization_id = Yii::app()->user->organization_id;
         parent::onBeforeSave($event);
     }
 
@@ -84,10 +94,10 @@ class Comments extends CActiveRecord
         // NOTE: you may need to adjust the relation name and the related
         // class name for the relations automatically generated below.
         return array(
-            'author' => array(self::BELONGS_TO, 'Users', 'created_by_user_id'),
+            'author' => array(self::BELONGS_TO, 'Users', 'created_by_user_id', 'alias'=>'commentAuthor'),
             'organization' => array(self::BELONGS_TO, 'Organizations', 'organization_id'),
             'request' => array(self::BELONGS_TO, 'Requests', 'request_id'),
-            'files'=>array(self::HAS_MANY, 'CommentsFiles', 'comment_id'),
+            'files'=>array(self::HAS_MANY, 'CommentsFiles', 'commentId', 'alias'=>'commentsFiles'),
         );
     }
 

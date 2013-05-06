@@ -8,14 +8,15 @@
 class UserIdentity extends CUserIdentity
 {
     private $_id, $_role;
-    public static $salt = 'SuFhl1nmZolZ9ULgkghy';
+//    public static $salt = 'SuFhl1nmZolZ9ULgkghy';
+    public static $salt = '$6$rounds=100000$E!jLJ?.Zx[><+Q<[bQ№QNyw1M$';
 
     public function authenticate()
     {
         $record = Users::model()->with('roles')->findByAttributes(array('username' => $this->username));
         if ($record === NULL)
             $this->errorCode = self::ERROR_USERNAME_INVALID;
-        else if ($record->password !== crypt($this->password, $record->password))
+        else if ($record->password !== crypt($this->password, self::$salt))
             $this->errorCode = self::ERROR_PASSWORD_INVALID;
         else {
             $this->_role = $record->roles->name;

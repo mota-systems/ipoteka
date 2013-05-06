@@ -13,7 +13,9 @@
  */
 class CommentsFiles extends CActiveRecord
 {
-	/**
+    public $savePath = 'webroot.files';
+
+    /**
 	 * Returns the static model of the specified AR class.
 	 * @param string $className active record class name.
 	 * @return CommentsFiles the static model class

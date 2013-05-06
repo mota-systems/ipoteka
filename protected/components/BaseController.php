@@ -8,11 +8,14 @@
  */
 class BaseController extends Controller
 {
+    public $pageTitle = 'СИК 1.0';
+    public $menuTitle, $documentsModel;
+
     public function getMenuItems()
     {
-        switch(Yii::app()->user->organizationType){
+        switch (Yii::app()->user->organizationType) {
             case Organizations::TYPE_BANK:
-                     $url = 'requests/bank';
+                $url = 'requests/bank';
                 break;
             case Organizations::TYPE_AGENT:
                 $url = 'requests/agent';
@@ -21,17 +24,29 @@ class BaseController extends Controller
                 $url = 'requests/admin';
                 break;
         }
-        $requestsUrl=Yii::app()->urlManager->createUrl($url);
+        $requestsUrl = Yii::app()->urlManager->createUrl($url);
         $items = array(
-            array('label' => 'Заявки', 'url' => $requestsUrl, 'visible' => Yii::app()->user->checkAccess('indexRequest'), 'active' => $this->module ? $this->module->id == 'requests' : FALSE),
-            array('label' => 'Пользователи', 'url' => array('/users/index'), 'visible' => Yii::app()->user->checkAccess('adminUser'), 'active' => Yii::app()->controller->id == 'users'),
-            array('label' => 'Статистика', 'url' => array('/statistics'), 'visible' => Yii::app()->user->checkAccess('viewGlobalStatistic')),
+            array('label' => 'Заявки', 'url' => $requestsUrl, 'active' => $this->module ? ($this->module->id == 'requests' AND Yii::app()->controller->action->id != 'statistics') : FALSE),
+            array('label' => 'Пользователи', 'url' => array('/users'), 'visible' => Yii::app()->user->checkAccess('adminUser'), 'active' => Yii::app()->controller->id == 'users'),
+            array('label' => 'Статистика', 'url' => array('/requests/' . Yii::app()->getModule('requests')->defaultController . '/statistics'), 'visible' => Yii::app()->user->checkAccess('viewStatistic'), 'active' => $this->module ? ($this->module->id == 'requests' AND Yii::app()->controller->action->id == 'statistics') : FALSE),
             array('label' => 'Организации', 'url' => array('/organizations'), 'visible' => Yii::app()->user->checkAccess('adminOrganization'), 'active' => Yii::app()->controller->id == 'organizations'),
+            array('label' => 'Фильтры', 'url' => array('/filters'), 'visible' => Yii::app()->user->checkAccess('editFilter'), 'active' => Yii::app()->controller->id == 'filters'),
             array('label' => 'Войти', 'url' => array('/site/login'), 'visible' => Yii::app()->user->isGuest),
-            array('label' => 'Выйти (' . Yii::app()->user->phio . ')', 'url' => array('/site/logout'), 'visible' => !Yii::app()->user->isGuest)
+            array('label' => 'Выйти', 'url' => array('/site/logout'), 'visible' => !Yii::app()->user->isGuest)
         );
         return $items;
 
+    }
+
+    public function disableProfilers()
+    {
+        if (Yii::app()->getComponent('log')) {
+            foreach (Yii::app()->getComponent('log')->routes as $route) {
+                if (in_array(get_class($route), array('CProfileLogRoute', 'CWebLogRoute', 'YiiDebugToolbarRoute', 'DbProfileLogRoute'))) {
+                    $route->enabled = FALSE;
+                }
+            }
+        }
     }
 
 }

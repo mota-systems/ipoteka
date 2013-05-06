@@ -38,6 +38,7 @@
  * @property string               $live_area
  * @property string               $live_edge
  * @property string               $live_city
+ * @property string               $live_street
  * @property string               $live_settlement
  * @property string               $live_house
  * @property string               $live_housing
@@ -74,6 +75,7 @@
  * @property string               $workplace_edge
  * @property string               $workplace_city
  * @property string               $workplace_setllement
+ * @property string               $workplace_street
  * @property string               $workplace_housing
  * @property string               $workplace_office
  * @property integer              $workplace_holding
@@ -188,6 +190,7 @@
  * @property string               $offourwork_workplace_country
  * @property string               $offourwork_workplace_edge
  * @property string               $offourwork_workplace_city
+ * @property string               $offourwork_workplace_street
  * @property string               $offourwork_workplace_setllement
  * @property string               $offourwork_workplace_housing
  * @property string               $offourwork_workplace_office
@@ -219,6 +222,7 @@
  * @property string               $lastwork_post
  * @property string               $lastwork_experience
  * @property string               $lastwork_pause
+ * @property string               $initialfee_summ
  * @property string               $initialfee_source
  * @property string               $initialfee_source_other
  * @property integer              $initialfee_trade_in
@@ -236,7 +240,9 @@
  * @property integer              $acquired_realestate_live_square
  * @property integer              $acquired_realestate_cost
  * @property integer              $acquired_realestate_cost_currency
+ * @property integer              $comment
  * @property integer              $created_by_user_id
+ * @property integer              $created_by_organization_id
  * @property string               $date_created
  * @property integer              $status
  *
@@ -250,7 +256,7 @@
  * @property OrganizationDecision $organizationDecisions
  *
  */
-class Requests extends CActiveRecord
+class   Requests extends CActiveRecord
 {
     //--Client Sex--//
     const SEX_MAN = 1;
@@ -263,27 +269,21 @@ class Requests extends CActiveRecord
     const STATUS_APPROVE = 4;
     const STATUS_REFUSE = 5;
     const STATUS_RETRIEVE = 6;
+    const STATUS_DEAL = 7;
 
-    //--Registration
+    //--Date Search Types--//
+    const DATE_TYPE_TODAY = 1;
+    const DATE_TYPE_YESTERDAY = 2;
+    const DATE_TYPE_WEEK = 3;
+    const DATE_TYPE_MONTH = 4;
+    const DATE_TYPE_QUARTER = 5;
+    const DATE_TYPE_INTERVAL = 6;
 
     public $filter;
-    private $fullName;
-
-
-    public function getFullName()
-    {
-        return "$this->surname $this->name $this->patronymic";
-    }
-
-    public function setFullName($name)
-    {
-        $this->fullName = $name;
-    }
-
-//    public function onAfterFind($event){
-//        $this->fullname = "$this->surname $this->name $this->patronymic";
-//        parent::onAfterFind($event);
-//    }
+    public $summary;
+    public $date_from;
+    public $date_to;
+    public $date_type;
 
     /**
      * Returns the static model of the specified AR class.
@@ -297,68 +297,94 @@ class Requests extends CActiveRecord
         return parent::model($className);
     }
 
+    public static function status()
+    {
+
+        $status = array(self::STATUS_NEW => 'Новая заявка', self::STATUS_PENDING => 'На рассмотрении', self::STATUS_DEAL => 'Сделка проведена');
+        if (Yii::app()->user->organizationType != Organizations::TYPE_BANK)
+            $status[self::STATUS_DRAFT] = 'Черновик';
+        return $status;
+    }
+
+    public function onBeforeSave($event)
+    {
+        if ($this->isNewRecord)
+            $this->fullName = "$this->surname $this->name $this->patronymic";
+        parent::onBeforeSave($event);
+    }
+
 
     public function onBeforeValidate($event)
     {
         if ($this->scenario == 'filter') {
+            //TODO: фильтр по процентам, и срокам ипотеки
             $rules[] = array('filter', 'required', 'message' => 'Не дает займы по выбранному типу объекта', 'on' => 'filter');
-            $rules[] = array('summ', 'compare', 'compareValue' => $this->filter->min_summ, 'operator' => '>', 'on' => 'filter', 'message' => "Минимальная сумма ипотеки -- {$this->filter->min_summ} " . Yii::t('ipoteka', 'год|года|лет|год', $this->filter->min_summ));
-            $rules[] = array('summ', 'compare', 'compareValue' => $this->filter->max_summ, 'operator' => '<', 'on' => 'filter', 'message' => "Максимальная сумма ипотеки -- {$this->filter->max_summ} " . Yii::t('ipoteka', 'год|года|лет|год', $this->filter->min_summ));
-            $rules[] = array('age', 'compare', 'compareValue' => $this->filter->min_borrower_age, 'operator' => '>', 'on' => 'filter', 'message' => "Минимальный возраст заемщика -- {$this->filter->min_borrower_age} " . Yii::t('ipoteka', 'год|года|лет|год', $this->filter->min_summ));
-            $rules[] = array('age', 'compare', 'compareValue' => $this->filter->max_borrower_age, 'operator' => '<', 'on' => 'filter', 'message' => "Максимальный возраст заемщика -- {$this->filter->max_borrower_age} " . Yii::t('ipoteka', 'год|года|лет|год', $this->filter->min_summ));
+            $rules[] = array('summ', 'compare', 'compareValue' => $this->filter->min_summ, 'operator' => '>=', 'on' => 'filter', 'message' => "Минимальная сумма ипотеки -- {$this->filter->min_summ} ");
+            $rules[] = array('summ', 'compare', 'compareValue' => $this->filter->min_summ, 'operator' => '>=', 'on' => 'filter', 'message' => "Минимальная сумма ипотеки -- {$this->filter->min_summ} ");
+            $rules[] = array('summ', 'compare', 'compareValue' => $this->filter->max_summ, 'operator' => '<=', 'on' => 'filter', 'message' => "Максимальная сумма ипотеки -- {$this->filter->max_summ} ");
+            $rules[] = array('age', 'compare', 'compareValue' => $this->filter->min_borrower_age, 'operator' => '>=', 'on' => 'filter', 'message' => "Минимальный возраст заемщика -- {$this->filter->min_borrower_age} " . Yii::t('ipoteka', 'год|года|лет|год', $this->filter->min_borrower_age));
+            $rules[] = array('age', 'compare', 'compareValue' => $this->filter->max_borrower_age, 'operator' => '<=', 'on' => 'filter', 'message' => "Максимальный возраст заемщика -- {$this->filter->max_borrower_age} " . Yii::t('ipoteka', 'год|года|лет|год', $this->filter->min_borrower_age));
             $validators = $this->validatorList;
             foreach ($rules as $rule) {
                 $validators->add(CValidator::createValidator($rule[1], $this, $rule[0], array_slice($rule, 2)));
             }
         }
-        parent::onBeforeValidate($event);
-    }
-
-    public function onBeforeSave($event)
-    {
-        if ($this->scenario == 'firstCreate') {
+        if (in_array($this->scenario, array('firstCreate', 'filter'))) {
             $this->summ = $this->objectCost - $this->initialFee;
             $dateFormatter = new DateTime($this->birthday);
             $this->age = $dateFormatter->diff(new DateTime)->y;
-//            $this->fullname = "$this->surname $this->name $this->patronymic";
         }
-        parent::onBeforeSave($event);
+        parent::onBeforeValidate($event);
     }
 
-//    public function afterFind()
-//    {
-////        if ($this->scenario != 'firstCreate') {
-////            $formatter = new CDateFormatter('ru_ru');
-////             $this->birthday = $formatter->formatDateTime($this->birthday, 'long', FALSE);
-////        }
-//////        if ($this->scenario == 'update') {
-//////            $formatter = new CDateFormatter('ru_ru');
-//////            $this->passport_issue = $formatter->formatDateTime($this->passport_issue, 'long', FALSE);
-//////        }
-//    }
+
+
+    public function filtration()
+    {
+        $this->scenario = 'filter';
+        $this->filter = Filters::model()->organization(Yii::app()->user->organization_id)->objectTypeId($this->objectTypeId)->find();
+        if (is_null($this->filter))
+            return $this;
+        if ($this->validate())
+            return $this;
+        else
+            throw new CHttpException(403, 'Выбранная вами заявка не проходит фильтры вашего банка. Ваш банк такие заявки не рассматривает.');
+//            throw new CHttpException(403, CHtml::errorSummary($this));
+
+    }
+
 
     public function behaviors()
     {
         return array(
-            'AutoTimestampBehavior' => array(
+            'AutoTimestampBehavior'   => array(
                 'class'           => 'zii.behaviors.CTimestampBehavior',
                 'createAttribute' => 'date_created',
-                'updateAttribute' => 'date_created',
+                'updateAttribute' => NULL,
             ),
-            'AutoAuthorBehavior'    => array(
-                'class'           => 'application.components.behaviors.AuthorBehavior',
-                'authorAttribute' => 'created_by_user_id',
+            'AutoAuthorBehavior'      => array(
+                'class'                 => 'application.components.behaviors.AuthorBehavior',
+                'authorAttribute'       => 'created_by_user_id',
+                'organizationAttribute' => 'created_by_organization_id',
             ),
-            'AutoDateTimeFormatter' => array(
+            'AutoDateTimeFormatter'   => array(
                 'class'     => 'application.components.behaviors.DateTimeFormatterBehavior',
                 'attribute' => array(
                     array('birthday', 'on' => 'firstCreate, filter'),
-                    array('passport_issue', 'on' => 'continueCreate'),
+                    array('passport_issue, marital_passport_issue, marital_birthday', 'on' => 'continueCreate.page1'),
                 )
             ),
-            'AutoUpperCase'         => array(
+            'AutoUpperCase'           => array(
                 'class'     => 'application.components.behaviors.UpperCaseBehavior',
                 'attribute' => array('name', 'surname', 'patronymic')
+            ),
+            'ArrayToStringConversion' => array(
+                'class'     => 'application.components.behaviors.ArrayToStringConversionBehavior',
+                'delimiter' => ',',
+                'attribute' => 'branch_production, branch_goverment, branch_service, branch_industry,
+                                career_status, career_activity_character, offourwork_branch_production,
+                                offourwork_branch_goverment, offourwork_branch_service, offourwork_branch_industry,
+                                offourwork_career_status, offourwork_career_activity_character, initialfee_source',
             ),
         );
     }
@@ -394,6 +420,8 @@ class Requests extends CActiveRecord
             array('surname, name, patronymic, initialFee, objectCost, objectTypeId, birthday', 'required', 'on' => 'firstCreate'),
             array('surname, name, patronymic, initialFee, objectCost, objectTypeId, birthday', 'filter', 'filter' => 'trim', 'on' => 'firstCreate'),
             array('surname, name, patronymic, summ, initialFee, objectTypeId, birthday', 'unsafe', 'on' => 'continueCreate'),
+            array('birthday', 'date', 'format' => 'yyyy-MM-dd', 'allowEmpty' => FALSE, 'on' => 'firstCreate, filter'),
+            array('birthday', 'DateDiffValidator', 'min' => 18, 'max' => 100, 'minDiffItem' => 'y', 'maxDiffItem' => 'y', 'tooMax' => 'Максимальный возраст заемщика {value} лет', 'tooMin' => 'Минимальный возраст заемщика {value} лет', 'on' => 'firstCreate'),
             array('objectCost', 'compare', 'compareAttribute' => 'initialFee', 'operator' => '>', 'allowEmpty' => FALSE, 'message' => '{attribute} должна быть больше первоначального взноса', 'on' => 'firstCreate, filter'),
             array('initialFee', 'compare', 'compareAttribute' => 'objectCost', 'allowEmpty' => FALSE, 'operator' => '<', 'message' => 'Первоначальный взнос должен быть меньше стоимости объекта', 'on' => 'firstCreate, filter'),
             array('sex', 'in', 'allowEmpty' => FALSE, 'range' => array(self::SEX_MAN, self::SEX_WOMEN), 'message' => 'Пожалуйста, выберите пол', 'on' => 'firstCreate'),
@@ -401,20 +429,59 @@ class Requests extends CActiveRecord
             array('surname, patronymic, name', 'length', 'max' => 100, 'min' => 2, 'on' => 'firstCreate'),
             array('surname, patronymic, name', 'AlphaValidator', 'allowDash' => TRUE, 'on' => 'firstCreate'),
             array('summ', 'default', 'value' => $this->objectCost - $this->initialFee, 'on' => 'firstCreate, filter'),
-
             array('sex, passport_seria, passport_number, objectTypeId, initialFee, summ, objectCost', 'numerical', 'integerOnly' => TRUE),
-            array('passport_seria, passport_number, birthday_place, citizenship, passport_issued, passport_issue, mobile_phone', 'required', 'on' => 'continueCreate'),
-            array('mobile_phone', 'safe', 'on' => 'continueCreate'),
-            array('birthday_place, citizenship', 'length', 'max' => 250, 'min' => 2),
-            array('passport_issued', 'length', 'max' => 255, 'min' => 5),
-            array('birthday', 'date', 'format' => 'yyyy-MM-dd', 'allowEmpty' => FALSE, 'on' => 'firstCreate, filter'),
-            array('passport_issue', 'date', 'format' => 'yyyy-MM-dd', 'on' => 'continueCreate'),
-            array('passport_issue', 'DateDiffValidator', 'min' => 0, 'max' => 50, 'minDiffItem' => 'd', 'maxDiffItem' => 'y', 'tooMax' => 'Паспорт не может быть выдан больше {value} лет назад', 'on' => 'continueCreate'),
-            array('birthday', 'DateDiffValidator', 'min' => 18, 'max' => 100, 'minDiffItem' => 'y', 'maxDiffItem' => 'y', 'tooMax' => 'Максимальный возраст заемщика {value} лет', 'tooMin' => 'Минимальный возраст заемщика {value} лет', 'on' => 'firstCreate'),
+
+            /*---page1---*/
+            array('passport_issue', 'DateDiffValidator', 'min' => 0, 'max' => 50, 'minDiffItem' => 'd', 'maxDiffItem' => 'y', 'tooMax' => 'Паспорт не может быть выдан больше {value} лет назад', 'on' => 'continueCreate.page1'),
+            array('passport_issue, marital_birthday, marital_passport_issue', 'date', 'format' => 'yyyy-MM-dd', 'on' => 'continueCreate.page1'),
+            array('birthday_place, mobile_phone, citizenship', 'length', 'max' => 250, 'on' => 'continueCreate.page1'),
+            array('passport_seria, passport_number, birthday_place, citizenship, passport_issued, passport_issue, mobile_phone', 'required', 'on' => 'continueCreate.page1'),
+            array('education, passport_seria, passport_number, registration_index, registration_period, live_index, live_status, marital_status, marital_dependency, martial_children, marital_sex, marital_passport_seria, marital_passport_number', 'numerical', 'integerOnly' => TRUE, 'on' => 'continueCreate.page1'),
+            array('home_phone, live_country, registration_country, live_area, registration_area, registration_edge, live_edge, registration_city, live_city, registration_settlement,  live_settlement,registration_house, live_house, registration_housing, live_housing, registration_apartment, registration_street, live_street, live_apartment, live_period, marital_surname, marital_name, marital_patronymic, marital_passport_issued, marital_work_post, marital_mobile_phone, marital_workplace, marital_work_phone, contact_surname, contact_name, contact_patronymic, contact_home_phone', 'length', 'max' => 50, 'on' => 'continueCreate.page1'),
+
+            /*---page2---*/
+            array('branch_other', 'length', 'max' => 250, 'on' => 'continueCreate.page2'),
+            array('branch_production, employe_fullname, branch_service, branch_goverment, branch_industry, workplace_area, workplace_country, workplace_holding, workplace_edge, workplace_city, workplace_street, workplace_setllement, workplace_housing, workplace_office, workplace_legal_form, workplace_phone, workplace_phone_addition, workplace_fax, workplace_site, career_status, career_activity_character, career_experience_start, career_experience_current_start, career_experience_direction_start, career_post, career_email', 'length', 'max' => 200, 'on' => 'continueCreate.page2'),
+            array('employe_inn, employe_ogrn, workplace_index, workplace_type_commercial, workplace_type_goverment, workplace_type_foreign, workplace_employers, workplace_age, career_character', 'numerical', 'integerOnly' => TRUE, 'on' => 'continnueCreate.page2', 'on' => 'continueCreate.page2'),
+
+            /*---page3---*/
+            array('earings_main_summ, earings_currency, earings_payment, earings_alimony, earings_regular_1_source, earings_regular_2_source, earings_regular_3_source, cars_model', 'length', 'max' => 200, 'on' => 'continueCreate.page3'),
+            array('cars_purchase_date', 'length', 'max' => 7, 'on' => 'continueCreate.page3'),
+            array('cars_registration_number,', 'length', 'max' => 10, 'on' => 'continueCreate.page3'),
+            array('realestate_plot_address, realestate_condo_address, realestate_cottege_address, realestate_other_name, realestate_other_address', 'length', 'max' => 250, 'on' => 'continueCreate.page3'),
+            array('earings_regular_1_summ, earings_regular_1_currency, earings_regular_2_summ, earings_regular_2_currency, earings_regular_3_summ, earings_regular_3_currency, realestate_type_cottege, realestate_type_condo, realestate_type_plot, realestate_plot_get, realestate_plot_occupancy, realestate_plot_square, realestate_condo_get, realestate_condo_occupancy, realestate_condo_square, realestate_cottege_get, realestate_cottege_occupancy, realestate_cottege_square, realestate_type_other, realestate_other_get, realestate_other_occupancy, realestate_other_square, cars_number, cars_get', 'numerical', 'integerOnly' => TRUE, 'on' => 'continueCreate.page3'),
+            array('cars_year', 'length', 'max' => 4, 'on' => 'continueCreate.page3'),
+            array('cars_year', 'date', 'format' => 'yyyy', 'on' => 'continueCreate.page3'),
+
+            /*---page4---*/
+            array('credit_1_creditor, credit_2_creditor, credit_3_creditor', 'length', 'max' => 250, 'on' => 'continueCreate.page4'),
+            array('credit_1, credit_2, credit_3, credit_1_summ, credit_2_summ, credit_3_summ, credit_1_currency, credit_2_currency, credit_3_currency, credit_1_type, credit_2_type, credit_3_type, credit_1_month_summ, credit_2_month_summ, credit_3_month_summ, credit_1_expired, credit_2_expired, credit_3_expired, card_1, card_1_payment_system, card_1_type, card_1_limit, card_1_currency, card_2, card_2_payment_system, card_2_type, card_2_limit, card_2_currency, card_3, card_3_payment_system, card_3_type, card_3_limit, card_3_currency', 'numerical', 'integerOnly' => TRUE, 'on' => 'continueCreate.page4'),
+            array('credit_1_receipt_date, credit_2_receipt_date, credit_3_receipt_date', 'length', 'max' => 7, 'on' => 'continueCreate.page4'),
+
+            /*---page5---*/
+            array('offourwork_availability, offourwork_employe_inn, offourwork_employe_ogrn, offourwork_workplace_index, offourwork_workplace_type_commercial, offourwork_workplace_type_goverment, offourwork_workplace_type_foreign, offourwork_workplace_employers, offourwork_workplace_age, offourwork_career_character', 'numerical', 'integerOnly' => TRUE, 'on' => 'continueCreate.page5'),
+            array('offourwork_employe_fullname, offourwork_workplace_area, offourwork_workplace_country, offourwork_workplace_edge, offourwork_workplace_city, offourwork_workplace_holding, offourwork_workplace_street, offourwork_workplace_setllement, offourwork_workplace_housing, offourwork_workplace_office, offourwork_workplace_legal_form, offourwork_workplace_phone, offourwork_workplace_phone_addition, offourwork_workplace_fax, offourwork_workplace_site, offourwork_branch_production, offourwork_branch_goverment, offourwork_branch_service, offourwork_branch_industry, offourwork_career_status, offourwork_career_activity_character, offourwork_career_experience_start, offourwork_career_post, offourwork_career_email', 'length', 'max' => 200, 'on' => 'continueCreate.page5'),
+
+            /*---page6---*/
+            array('acquired_realestate_type_other, acquired_realestate_address, acquired_realestate_region', 'length', 'max' => 250, 'on' => 'continueCreate.page6'),
+            array('comment', 'length', 'max' => 1000, 'on' => 'continueCreate.page6'),
+            array('initialfee_summ, initialfee_trade_in, initialfee_trade_in_cost_currency, acquired_realestate_type, acquired_realestate_market, acquired_realestate_construction, acquired_realestate_goal, acquired_realestate_summ_square, acquired_realestate_live_square, acquired_realestate_cost, acquired_realestate_cost_currency, created_by_user_id', 'numerical', 'integerOnly' => TRUE, 'on' => 'continueCreate.page6'),
+            array('lastwork_fullname, lastwork_post, lastwork_experience, lastwork_pause, initialfee_source, initialfee_source_other, initialfee_trade_in_address, initialfee_trade_in_cost', 'length', 'max' => 200, 'on' => 'continueCreate.page6'),
+
             // The following rule is used by search().
             // Please remove those attributes that should not be searched.
-            array('id, fullName, surname, mobile_phone, patronymic, name, sex, birthday, birthday_place, citizenship, passport_seria, passport_number, passport_issue, passport_issued, created_by_user_id, date_created', 'safe', 'on' => 'search'),
+            array('id, date_type, date_from, date_to, fullName, surname, mobile_phone, patronymic, name, sex, birthday, birthday_place, citizenship, passport_seria, passport_number, passport_issue, passport_issued, created_by_user_id, date_created, status_id', 'safe', 'on' => 'search'),
         );
+    }
+
+    private function filterFormatDate($value)
+    {
+        if (CDateTimeParser::parse($value, 'yyyy-MM-dd'))
+            return $value;
+        $parser = CDateTimeParser::parse($value, 'dd.MM.yyyy');
+        if ($parser === FALSE)
+            return $value;
+        return date('Y-m-d', $parser);
     }
 
 
@@ -426,90 +493,17 @@ class Requests extends CActiveRecord
         // NOTE: you may need to adjust the relation name and the related
         // class name for the relations automatically generated below.
         return array(
-            // Registration period
-            'registrationPeriod'             => array(self::BELONGS_TO, 'Vocabulary', 'registration_period', 'alias' => 'voc', 'condition' => 'voc.category=registration AND voc.column=period'),
-
-            // Live Period
-            'livePeriod'                     => array(self::BELONGS_TO, 'Vocabulary', 'registration_period', 'alias' => 'voc', 'condition' => 'voc.category=registration AND voc.column=period'),
-
-            // Live Status
-            'liveStatus'                     => array(self::BELONGS_TO, 'Vocabulary', 'live_tatus', 'alias' => 'voc', 'condition' => 'voc.category=live AND voc.column=status'),
-
-            // Education
-            'education'                      => array(self::BELONGS_TO, 'Vocabulary', 'education', 'alias' => 'voc', 'condition' => 'voc.category=education'),
-
-            //  Marital Status
-            'maritalStatus'                  => array(self::BELONGS_TO, 'Vocabulary', 'marital_status', 'alias' => 'voc', 'condition' => 'voc.category=marital AND voc.column=status'),
-
-            // Workplace Legal Form
-            'workplaceLegalForm'             => array(self::BELONGS_TO, 'Vocabulary', 'workplace_legal_form', 'alias' => 'voc', 'condition' => 'voc.category=workplace AND voc.column=legal_form'),
-
-            //---Branch---//
-            // Production
-            'workplaceBranchProduction'      => array(self::BELONGS_TO, 'Vocabulary', 'branch_production', 'alias' => 'voc', 'condition' => 'voc.category=branch AND voc.column=production'),
-            // Goverment
-            'workplaceBranchGoverment'       => array(self::BELONGS_TO, 'Vocabulary', 'branch_goverment', 'alias' => 'voc', 'condition' => 'voc.category=branch AND voc.column=goverment'),
-            // Service
-            'workplaceBranchService'         => array(self::BELONGS_TO, 'Vocabulary', 'branch_service', 'alias' => 'voc', 'condition' => 'voc.category=branch AND voc.column=service'),
-            // Industry
-            'workplaceBranchIndustry'        => array(self::BELONGS_TO, 'Vocabulary', 'branch_industry', 'alias' => 'voc', 'condition' => 'voc.category=branch AND voc.column=industry'),
-
-            //---Career---//
-            // Status
-            'careerStatus'                   => array(self::BELONGS_TO, 'Vocabulary', 'career_status', 'alias' => 'voc', 'condition' => 'voc.category=career AND voc.column=status'),
-            // Activity
-            'careerActivity'                 => array(self::BELONGS_TO, 'Vocabulary', 'career_activity', 'alias' => 'voc', 'condition' => 'voc.category=career AND voc.column=activity'),
-            // Post
-            'careerCharacter'                => array(self::BELONGS_TO, 'Vocabulary', 'career_character', 'alias' => 'voc', 'condition' => 'voc.category=career AND voc.column=post'),
-
-            // Earings Currency
-            'earingsCurrency'                => array(self::BELONGS_TO, 'Vocabulary', 'earings_currency', 'alias' => 'voc', 'condition' => 'voc.category=currency'),
-
-            //---Realestate---//
-            // Plot
-            'realestatePlotGet'              => array(self::BELONGS_TO, 'Vocabulary', 'realestate_plot_get', 'alias' => 'voc', 'condition' => 'voc.category=realestate AND voc.column=get'),
-            // Condo
-            'realestateCondoGet'             => array(self::BELONGS_TO, 'Vocabulary', 'realestate_condo_get', 'alias' => 'voc', 'condition' => 'voc.category=realestate AND voc.column=get'),
-            // Cottege
-            'realestateCottegeGet'           => array(self::BELONGS_TO, 'Vocabulary', 'realestate_cottege_get', 'alias' => 'voc', 'condition' => 'voc.category=realestate AND voc.column=get'),
-
-            // Cars Get
-            'carsGet'                        => array(self::BELONGS_TO, 'Vocabulary', 'cars_get', 'alias' => 'voc', 'condition' => 'voc.category=cars AND voc.column=get'),
-
-            //---Credit---//
-            // Type
-            'credit1Type'                    => array(self::BELONGS_TO, 'Vocabulary', 'credit_1_type', 'alias' => 'voc', 'condition' => 'voc.category=cars AND voc.column=get'),
-            //TODO: Card Payment System
-            //TODO: Card Type
-            //TODO: Card Currency
-            //TODO: InitialFee Source
-            'initialFeeSource'               => array(self::BELONGS_TO, 'Vocabulary', 'initialfee_source', 'condition' => 'initialFeeSource.category=initialfee AND initialFeeSource.column=source'),
-            //Initial Fee Currency
-            'initialFeeCurrency'             => array(self::BELONGS_TO, 'Vocabulary', 'initialfee_trade_in_cost_currency', 'condition' => 'initialFeeCurrency.category=currency'),
-
-            //---Acquired Realestate---//
-            // Market
-            'acquiredRealestateMarket'       => array(self::BELONGS_TO, 'Vocabulary', 'acquired_realestate_market', 'condition' => 'acquiredRealestateMarket.category=acquired_realestate AND acquiredRealestateMarket.column=market'),
-            // Construction
-            'acquiredRealestateConstruction' => array(self::BELONGS_TO, 'Vocabulary', 'acquired_realestate_construction', 'condition' => 'acquiredRealestateConstruction.category=acquired_realestate AND acquiredRealestateConstruction.column=construction'),
-            // Type
-            'acquiredRealestateType'         => array(self::BELONGS_TO, 'Vocabulary', 'acquired_realestate_type', 'condition' => 'acquiredRealestateType.category=acquired_realestate AND acquiredRealestateType.column=type'),
-            // Goal
-            'acquiredRealestateGoal'         => array(self::BELONGS_TO, 'Vocabulary', 'acquired_realestate_goal', 'condition' => 'acquiredRealestateGoal.category=acquired_realestate AND acquiredRealestateGoal.column=goal'),
-            // Currency
-            'acquiredRealestateCurrency'     => array(self::BELONGS_TO, 'Vocabulary', 'acquired_realestate_currency', 'condition' => 'acquiredRealestateCurrency.category=currency'),
-
             //---Other---//
-            'organizationDecision'           => array(self::HAS_ONE, 'Decision', 'request_id', 'condition' => 'organizationDecision.organization_id=' . Yii::app()->user->organization_id),
-            'decisions'                      => array(self::HAS_MANY, 'Decision', 'request_id'),
-            'comments'                       => array(self::HAS_MANY, 'Comments', 'request_id', 'order' => 'comments.date_created DESC'),
-            'files'                          => array(self::HAS_MANY, 'Files', 'request_id'),
-            'author'                         => array(self::BELONGS_TO, 'Users', 'created_by_user_id'),
-            'commentCount'                   => array(self::STAT, 'Comments', 'request_id'),
-            'type'                           => array(self::BELONGS_TO, 'ObjectType', 'objectTypeId'),
-            'status'                         => array(self::BELONGS_TO, 'Status', 'status_id'),
-            'statusHistory'                  => array(self::HAS_MANY, 'StatusHistory', 'request_id', 'order' => 'date_created'),
-            'statusHistoryOrganization'      => array(self::HAS_MANY, 'StatusHistory', 'request_id', 'order' => 'date_created ASC', 'condition' => 'statusHistoryOrganization.organization_id=' . Yii::app()->user->organization_id),
+            'organizationDecision'      => array(self::HAS_ONE, 'Decision', 'request_id', 'condition' => 'organizationDecision.organization_id=' . Yii::app()->user->organization_id),
+            'decisions'                 => array(self::HAS_MANY, 'Decision', 'request_id'),
+            'comments'                  => array(self::HAS_MANY, 'Comments', 'request_id', 'order' => 'comments.date_created DESC'),
+            'files'                     => array(self::HAS_MANY, 'Files', 'request_id'),
+            'author'                    => array(self::BELONGS_TO, 'Users', 'created_by_user_id'),
+            'commentCount'              => array(self::STAT, 'Comments', 'request_id'),
+            'type'                      => array(self::BELONGS_TO, 'ObjectType', 'objectTypeId'),
+            'status'                    => array(self::BELONGS_TO, 'Status', 'status_id'),
+            'statusHistory'             => array(self::HAS_MANY, 'StatusHistory', 'request_id', 'order' => 'statusHistory.date_created ASC'),
+            'statusHistoryOrganization' => array(self::HAS_MANY, 'StatusHistory', 'request_id', 'order' => 'statusHistoryOrganization.date_created ASC', 'condition' => 'statusHistoryOrganization.organization_id=' . Yii::app()->user->organization_id),
         );
     }
 
@@ -546,7 +540,7 @@ class Requests extends CActiveRecord
             'registration_country'                 => 'Страна',
             'registration_area'                    => 'Область',
             'registration_edge'                    => 'Район',
-            'registration_setllement'              => 'Населенный пункт',
+            'registration_settlement'              => 'Населенный пункт',
             'registration_city'                    => 'Город',
             'registration_street'                  => 'Улица',
             'registration_house'                   => 'Дом',
@@ -595,6 +589,7 @@ class Requests extends CActiveRecord
             'workplace_country'                    => 'Страна',
             'workplace_edge'                       => 'Район',
             'workplace_city'                       => 'Город',
+            'workplace_street'                     => 'Улица',
             'workplace_setllement'                 => 'Населенный пункт',
             'workplace_housing'                    => 'Строение, корпус',
             'workplace_office'                     => 'Офис',
@@ -640,21 +635,21 @@ class Requests extends CActiveRecord
             'realestate_type_plot'                 => 'Земельный участок без строений',
             'realestate_plot_get'                  => 'Способ получения',
             'realestate_plot_address'              => 'Адрес',
-            'realestate_plot_occupancy'            => 'Время владения',
+            'realestate_plot_occupancy'            => 'Время владения(лет)',
             'realestate_plot_square'               => 'Общая площадь',
             'realestate_condo_get'                 => 'Способ получения',
             'realestate_condo_address'             => 'Адрес',
-            'realestate_condo_occupancy'           => 'Время владения',
+            'realestate_condo_occupancy'           => 'Время владения(лет)',
             'realestate_condo_square'              => 'Общая площадь',
             'realestate_cottege_get'               => 'Способ получения',
             'realestate_cottege_address'           => 'Адрес',
-            'realestate_cottege_occupancy'         => 'Время владения',
+            'realestate_cottege_occupancy'         => 'Время владения(лет)',
             'realestate_cottege_square'            => 'Общая площадь',
             'realestate_type_other'                => 'Иное',
             'realestate_other_name'                => 'Иное(название)',
             'realestate_other_get'                 => 'Способ получения',
             'realestate_other_address'             => 'Адрес',
-            'realestate_other_occupancy'           => 'Время владения',
+            'realestate_other_occupancy'           => 'Время владения(лет)',
             'realestate_other_square'              => 'Общая площадь',
             'cars_number'                          => 'Количество автомашин в собственности',
             'cars_model'                           => 'Марка и модель',
@@ -711,6 +706,7 @@ class Requests extends CActiveRecord
             'offourwork_workplace_edge'            => 'Район',
             'offourwork_workplace_city'            => 'Город',
             'offourwork_workplace_setllement'      => 'Населенный пункт',
+            'offourwork_workplace_street'          => 'Улица',
             'offourwork_workplace_housing'         => 'Строение, корпус',
             'offourwork_workplace_office'          => 'Офис',
             'offourwork_workplace_holding'         => 'Принадлежность к холиднгу (группе компаний)',
@@ -740,6 +736,7 @@ class Requests extends CActiveRecord
             'lastwork_experience'                  => 'Непрерывный стаж работы',
             'lastwork_pause'                       => 'Если прирывался, укажите причину',
             'initialfee_source'                    => 'Источник первоначального взноса',
+            'initialfee_summ'                      => 'Сумма первоначального взноса',
             'initialfee_source_other'              => 'Прочее',
             'initialfee_trade_in'                  => 'Встречная продажа квартиры, находящейся в собственности',
             'initialfee_trade_in_address'          => 'Адрес продоваемой квартиры',
@@ -756,7 +753,69 @@ class Requests extends CActiveRecord
             'acquired_realestate_live_square'      => 'Жилая площадь',
             'acquired_realestate_cost'             => 'Стоимость приобретаемого/закладываемого объекта',
             'acquired_realestate_cost_currency'    => 'Валюта',
+            'comment'                              => 'Комментарий агента',
+            'status_id'                            => 'Статус заявки'
         );
+    }
+
+    public function counter()
+    {
+        $criteria = new CDbCriteria;
+        $criteria->select = FALSE;
+        switch (Yii::app()->user->organizationType) {
+            case Organizations::TYPE_ADMIN:
+                if ($this->status_id) {
+                    $criteria->with[] = 'decisions';
+                    $criteria->select = 'decisions.status_id';
+                    $criteria->compare('decisions.status_id', $this->status_id);
+                }
+                break;
+            case Organizations::TYPE_AGENT:
+                if (Yii::app()->user->roleId == Roles::ROLE_AGENT_ADMIN) {
+                    $staff = Users::model()->organization(Yii::app()->user->organization_id)->findAll();
+                    $in = array();
+                    foreach ($staff as $one) {
+                        $in[] = $one->id;
+                    }
+                    $criteria->compare('created_by_user_id', $in);
+                } else
+                    $criteria->compare('created_by_user_id', $this->created_by_user_id);
+                if ($this->status_id) {
+                    if ($this->status_id == Requests::STATUS_DRAFT) {
+                        $criteria->compare('t.status_id', $this->status_id);
+                    } else {
+                        $criteria->with[] = 'decisions';
+                        $criteria->select = 'decisions.status_id';
+                        $criteria->compare('decisions.status_id', $this->status_id);
+                    }
+                }
+                break;
+            case Organizations::TYPE_BANK:
+                $filters = Filters::model()->cache(3600, new CDbCacheDependency('SELECT MAX(date_created) FROM filters WHERE organization_id=' . Yii::app()->user->organization_id))->organization(Yii::app()->user->organization_id)->findAll();
+                $objectTypes = ObjectType::getAllInArray();
+
+                foreach ($filters as $filter) {
+                    if (array_key_exists($filter->objectTypeId, $objectTypes))
+                        unset($objectTypes[$filter->objectTypeId]);
+                    $condition = "objectTypeId=$filter->objectTypeId AND summ>=$filter->min_summ AND summ<=$filter->max_summ AND age>=$filter->min_borrower_age AND age<=$filter->max_borrower_age AND initialFee>=(summ*$filter->fee/100)";
+                    $criteria->addCondition($condition, 'OR');
+                }
+                $criteria->addInCondition("t.objectTypeId", array_keys($objectTypes), 'OR');
+                $condition = 't.status_id!=' . Requests::STATUS_DRAFT;
+                $criteria->addCondition($condition);
+                if ($this->status_id) {
+                    $criteria->with[] = 'organizationDecision';
+                    $criteria->select = 'organizationDecision.status_id';
+                    $criteria->compare('organizationDecision.status_id', $this->status_id);
+                }
+                break;
+        }
+        return new CActiveDataProvider($this, array(
+            'criteria'   => $criteria,
+            'pagination' => array(
+                'pageSize' => 20
+            ),
+        ));
     }
 
     /**
@@ -770,50 +829,82 @@ class Requests extends CActiveRecord
 
         $criteria = new CDbCriteria;
         $criteria->with = array('status', 'type');
-        if (Yii::app()->user->organizationType != Organizations::TYPE_ADMIN) {
-            if (Yii::app()->user->organizationType == Organizations::TYPE_AGENT) {
-                if (Yii::app()->user->roleId == Users::ROLE_AGENT_ADMIN) {
+        $criteria->together = TRUE;
+        $criteria->select = array('t.id', 't.fullName', 't.objectTypeId', 't.date_created', 't.status_id');
+        switch (Yii::app()->user->organizationType) {
+            case Organizations::TYPE_ADMIN:
+                if ($this->status_id) {
+                    $criteria->with[] = 'decisions';
+                    $criteria->compare('decisions.status_id', $this->status_id);
+                }
+                break;
+            case Organizations::TYPE_AGENT:
+                if (Yii::app()->user->roleId == Roles::ROLE_AGENT_ADMIN) {
                     $staff = Users::model()->organization(Yii::app()->user->organization_id)->findAll();
                     $in = array();
                     foreach ($staff as $one) {
-                        $in[] = $one['id'];
+                        $in[] = $one->id;
                     }
                     $criteria->compare('created_by_user_id', $in);
                 } else
                     $criteria->compare('created_by_user_id', $this->created_by_user_id);
-            } elseif (Yii::app()->user->organizationType == Organizations::TYPE_BANK) {
-                //TODO: Прикрутить прогон по процентам, срок ипотеки.
+                if ($this->status_id) {
+                    $criteria->with[] = 'decisions';
+                    $criteria->compare('decisions.status_id', $this->status_id);
+                }
+                break;
+            case Organizations::TYPE_BANK:
                 $filters = Filters::model()->organization(Yii::app()->user->organization_id)->findAll();
+                $objectTypes = ObjectType::getAllInArray();
                 foreach ($filters as $filter) {
-                    $condition = "objectTypeId=$filter->objectTypeId AND summ>$filter->min_summ AND summ<$filter->max_summ AND age>$filter->min_borrower_age AND age<$filter->max_borrower_age";
+                    if (array_key_exists($filter->objectTypeId, $objectTypes))
+                        unset($objectTypes[$filter->objectTypeId]);
+                    $condition = "objectTypeId=$filter->objectTypeId AND summ>=$filter->min_summ AND summ<=$filter->max_summ AND age>=$filter->min_borrower_age AND age<=$filter->max_borrower_age AND initialFee>=(summ*$filter->fee/100)";
                     $criteria->addCondition($condition, 'OR');
                 }
-            }
+                $criteria->addInCondition("t.objectTypeId", array_keys($objectTypes), 'OR');
+                $condition = 't.status_id!=' . Requests::STATUS_DRAFT;
+                $criteria->addCondition($condition);
+                if ($this->status_id) {
+                    $criteria->with[] = 'organizationDecision';
+                    $criteria->compare('organizationDecision.status_id', $this->status_id);
+                }
         }
-        if (!empty($this->fullName))
-            /*  if (!empty($this->fullName)) {
-                  //В фильтр id_author у нас есть возможность писать любой критерий поиска по имени, фамилии или отчеству
-                  $criteria->condition = 'surname LIKE :aid
-                                      OR name LIKE :aid
-                                      OR patronymic LIKE :aid
-                                      OR CONCAT(surname, " ", name, " ", patronymic) LIKE :aid';
+        switch ($this->date_type) {
+            case self::DATE_TYPE_INTERVAL:
+                if (!empty($this->date_from))
+                    $criteria->compare('t.date_created', '>=' . $this->filterFormatDate($this->date_from), TRUE);
+                if (!empty($this->date_to))
+                    $criteria->compare('t.date_created', '<=' . $this->filterFormatDate($this->date_to), TRUE);
+                break;
+            case self::DATE_TYPE_MONTH:
+                $criteria->compare('t.date_created', date('Y-m'), TRUE);
+                break;
+            case self::DATE_TYPE_TODAY:
+                $criteria->compare('t.date_created', date('Y-m-d'), TRUE);
+                break;
+            case self::DATE_TYPE_YESTERDAY:
+                $criteria->compare('t.date_created', date('Y-m-d', strtotime('yesterday')), TRUE);
+                break;
+            case self::DATE_TYPE_WEEK:
+                $time = time();
+                $criteria->compare('t.date_created', ">=" . date('Y-m-d', $time - ($time - 345600) % 604800), TRUE);
+                break;
+            case self::DATE_TYPE_QUARTER:
+                $c = date('n');
+                if ($m = intval(($c + 2) / 3) == 1)
+                    $m = "01";
+                elseif ($m = intval(($c + 2) / 3) == 2)
+                    $m = "04"; elseif ($m = intval(($c + 2) / 3) == 3)
+                    $m = "07"; elseif ($m = intval(($c + 2) / 3) == 2)
+                    $m = "10";
+                $criteria->compare('t.date_created', ">=2012-$m-01", TRUE);
+                break;
 
-                  if (!count($criteria->params)) {
-                      $criteria->params = array();
-                  }
-
-                  $criteria->params[':aid'] = '%' . $this->fullName . '%';*/
-//        if (!empty($this->fullName)) {
-//        $criteria->compare('name', $this->fullName, TRUE, 'OR', FALSE);
-//        $criteria->compare('surname', $this->fullName, TRUE, 'OR', FALSE);
-//        $criteria->compare('patronymic', $this->fullName, TRUE, 'OR', FALSE);
-
-//        }
-//        $criteria->compare(new CDbExpression("CONCAT(surname, ' ', name, ' ', patronymic)"), $this->fullName, TRUE);
-            $criteria->compare('id', $this->id);
-//        $criteria->compare('surname', $this->surname, TRUE);
-//        $criteria->compare('patronymic', $this->patronymic, TRUE);
-//        $criteria->compare('name', $this->name, TRUE);
+        }
+        $criteria->compare('t.id', $this->id);
+        if ($this->fullName)
+            $criteria->compare('fullName', $this->fullName, TRUE);
         if ($this->sex)
             $criteria->compare('sex', $this->sex);
         if ($this->objectTypeId)
@@ -826,24 +917,12 @@ class Requests extends CActiveRecord
         $criteria->compare('passport_issue', $this->passport_issue, TRUE);
         $criteria->compare('passport_issued', $this->passport_issued, TRUE);
         $criteria->compare('mobile_phone', $this->mobile_phone, TRUE);
-        $criteria->compare('date_created', $this->date_created, TRUE);
 
         return new CActiveDataProvider($this, array(
             'criteria'   => $criteria,
             'pagination' => array(
                 'pageSize' => 20
             ),
-            /*'sort'     => array(
-                'defaultOrder' => 't.id DESC',
-                'attributes'   => array(
-                    'id',
-                    'objectTypeId',
-                    'fullName' => array(
-                        'asc'  => 't.surname ASC, t.name ASC, t.patronymic ASC',
-                        'desc' => 't.surname DESC, t.name DESC, t.patronymic ASC',
-                    ),
-                ),
-            ),*/
         ));
     }
 }

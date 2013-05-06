@@ -9,7 +9,7 @@ Yii::setPathOfAlias('requests', dirname(__FILE__) . '/../modules/requests');
 // CWebApplication properties can be configured here.
 return array(
     'basePath'          => dirname(__FILE__) . DIRECTORY_SEPARATOR . '..',
-    'name'              => 'Система ипотечных кредитов',
+    'name'              => 'СИК 1.0',
     'language'          => 'ru',
     'defaultController' => 'site',
     'theme'             => 'bootstrap',
@@ -31,26 +31,45 @@ return array(
     'modules'           => array(
         // uncomment the following to enable the Gii tool
 
-        'gii' => array(
+        'gii'      => array(
             'class'          => 'system.gii.GiiModule',
             'password'       => '0000',
             // If removed, Gii defaults to localhost only. Edit carefully to taste.
-            'ipFilters'      => array('178.236.140.20', '::1', '95.134.251.209'),
+            'ipFilters'      => array('176.117.143.48', '::1', '95.134.251.209'),
             'generatorPaths' => array(
                 'bootstrap.gii',
             ),
         ),
-        'requests',
-
+        'requests' => array(
+            'class'   => 'requests.RequestsModule',
+            'modules' => array(
+                'documents',
+            )
+        ),
+        'yiiQuickSwap',
     ),
 
     // application components
     'components'        => array(
+        'yiiQuickSwap' => array(
+            'class' => 'yiiQuickSwap.components.yiiQuickSwap',
+            'users' => array('unicredit', 'broker', 'admin'), // a list of users that you want to swap between
+            'redirect' => 'requests', // where to redirect to after the swap
+        ),
+        'image'        => array(
+            'class'  => 'ext.image.CImageComponent',
+            // GD or ImageMagick
+            'driver' => 'GD',
+            // ImageMagick setup path
+            'params' => array('directory' => '/opt/local/bin'),
+        ),
         'bootstrap'    => array(
             'class'         => 'bootstrap.components.Bootstrap',
             'responsiveCss' => TRUE,
         ),
-
+        'format'       => array(
+            'class' => 'application.components.CCFormatter',
+        ),
         'authManager'  => array(
             // Будем использовать свой менеджер авторизации
             'class'        => 'PhpAuthManager',
@@ -66,6 +85,14 @@ return array(
         'cache'        => array(
             'class' => 'system.caching.CFileCache',
         ),
+        /*'pager'        => array(
+            'header'         => '',
+            'cssFile'        => FALSE,
+            'firstPageLabel' => '<<',
+            'lastPageLabel'  => '>>',
+            'prevPageLabel'  => '<',
+            'nextPageLabel'  => '>',
+        ),*/
         // uncomment the following to enable URLs in path-format
 
         'urlManager'   => array(
@@ -90,9 +117,20 @@ return array(
             'password'              => 'JM2CrKD0',
             'charset'               => 'utf8',
             'enableParamLogging'    => 0,
+            'enableProfiling'       => defined('YII_DEBUG') ? TRUE : FALSE,
+            'schemaCachingDuration' => /*defined('YII_DEBUG') ? 0 : */
+            '3600',
+        ),
+        /*array(
+            'connectionString'      => 'mysql:host=localhost;dbname=ipoteka',
+            'emulatePrepare'        => TRUE,
+            'username'              => 'root',
+            'password'              => '',
+            'charset'               => 'utf8',
+            'enableParamLogging'    => 0,
             'enableProfiling'       => TRUE,
             'schemaCachingDuration' => defined('YII_DEBUG') ? 0 : '3600',
-        ),
+        ),*/
 
         'errorHandler' => array(
             // use 'site/error' action to display errors
@@ -114,7 +152,7 @@ return array(
                 ),
                 array(
                     'class'     => 'application.extensions.yii-debug-toolbar-master.yii-debug-toolbar.YiiDebugToolbarRoute',
-                    'ipFilters' => array('127.0.0.1', '178.236.140.20', '217.71.236.162'),
+                    'ipFilters' => array('127.0.0.1', '176.117.143.48'),
                 ),
 
             ),

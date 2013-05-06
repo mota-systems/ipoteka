@@ -23,9 +23,10 @@ class CommentAction extends CAction
         $comment->request_id = $id;
         if ($comment->save()) {
             Yii::app()->user->setFlash('success', 'Ваш комментарий добавлен');
-            $this->controller->redirect(array('/requests/bank/view', 'id' => $id));
         } else
+//            Yii::app()->user->setFlash('error', CHtml::errorSummary($comment));
             Yii::app()->user->setFlash('error', 'Ошибка создания комментария. Попробуйте позже.');
+        $this->controller->redirect(array('/requests/' . Yii::app()->getModule('requests')->defaultController . '/view', 'id' => $id));
 
     }
 

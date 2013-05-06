@@ -43,6 +43,7 @@ class AgentController extends DefaultController
                 'class'=>'requests.components.actions.CommentAction',
                 'scenario'=>'agent',
             ),
+            'statistics'   => 'requests.components.actions.StatisticsAction',
         );
     }
 
@@ -65,11 +66,15 @@ class AgentController extends DefaultController
             'files',
             'decisions'
         ))->findByPk($id);
+        //TODO: Просмотр только своей заявки. Или завяки своей организации.
 //        if (!Yii::app()->user->checkAccess('viewOwnRequest', array('author'=>$model->author->id)))
 //            throw new CHttpException(400, 'Нет прав для выполнения данного дествия');
         if ($model === NULL)
             throw new CHttpException(404, 'Такой заявки не существует.');
-        if (!in_array($model->author->id, CHtml::listData(Organizations::model()->agent(Yii::app()->user->organization_id)->findAll(), 'id', 'id')))
+//        echo var_dump(Organizations::model()->agent(Yii::app()->user->organization_id)->find());
+//        echo var_dump(Yii::app()->user->organization_id);
+//        Yii::app()->end();
+        if (!in_array($model->created_by_user_id, CHtml::listData(Organizations::model()->agent(Yii::app()->user->organization_id)->find()->users, 'id', 'id')))
             throw new CHttpException(403, 'Данная заявка добавлена другим контрагентом. У вас нет прав для ее просмотра.');
         if (Yii::app()->user->roleId == Users::ROLE_AGENT_MANAGER AND $model->author_id != Yii::app()->user->id)
             throw new CHttpException(403, 'Данная заявка добавлена другим сотрудником вашей организации. У вас нет прав для ее просмотра.');

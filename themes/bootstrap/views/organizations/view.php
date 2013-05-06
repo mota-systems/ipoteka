@@ -3,12 +3,12 @@
 /* @var $model Organizations */
 
 $this->breadcrumbs = array(
-    'Организации' => array('index'),
+    'Организации' => array('admin'),
     $model->name,
 );
 
 $this->menu = array(
-    array('label' => 'Список организаций', 'url' => array('index')),
+    array('label' => 'Список организаций', 'url' => array('admin')),
     array('label' => 'Создать организацию', 'url' => array('create')),
     array('label' => 'Удалить организацию', 'url' => '#', 'linkOptions' => array('submit' => array('delete', 'id' => $model->id), 'confirm' => 'Вы действительно хотите удалить эту организацию?')),
 );
@@ -16,7 +16,7 @@ $this->menu = array(
 
 <h1>Организация <?php echo $model->name; ?></h1>
 
-<?php $this->widget('zii.widgets.CDetailView', array(
+<?php $this->widget('bootstrap.widgets.TbDetailView', array(
     'data' => $model,
     'attributes' => array(
         array(

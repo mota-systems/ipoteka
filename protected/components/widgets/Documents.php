@@ -12,7 +12,7 @@ class Documents extends CPortlet
 
     public $model;
 
-    public $title = 'Документы';
+    public $title;
 
     public $separator;
     public $hideOnEmpty = FALSE;
@@ -21,11 +21,30 @@ class Documents extends CPortlet
     protected function renderContent()
     {
         if (!empty($this->model)) {
-            $dataProvider = new CActiveDataProvider('Files', array(
-                'criteria'=>array(
-                'condition'=>'request_id='.$this->model->id,
-                )));
-            $this->render('index', array('dataProvider' => $dataProvider));
-        }
+            $files = Files::model()->findAllByAttributes(array('request_id' => $this->model->id));
+            $docs = array(Files::TYPE_PASSPORT => array(), Files::TYPE_LABOR_BOOK => array(), Files::TYPE_SECOND_DOCUMENT => array(), Files::TYPE_INCOME_STATEMENT => array(), Files::TYPE_OTHER_DOCUMENT => array());
+            foreach ($files as $file) {
+                $docs[$file->fileType][] = $file;
             }
+            $items = array(
+                array('id' => 1, 'fileType' => 'Копия паспорта', 'models' => $docs[Files::TYPE_PASSPORT]),
+                array('id' => 2, 'fileType' => 'Второй документ', 'models' => $docs[Files::TYPE_SECOND_DOCUMENT]),
+                array('id' => 3, 'fileType' => 'Трудовая книжка', 'models' => $docs[Files::TYPE_LABOR_BOOK]),
+                array('id' => 4, 'fileType' => 'Справка о доходах', 'models' => $docs[Files::TYPE_INCOME_STATEMENT]),
+            );
+            $other = array();
+            static $counter;
+            foreach($docs[Files::TYPE_OTHER_DOCUMENT] as $file){
+                $other[] = array('id'=>++$counter, 'fileType'=>$file->comment, 'models'=>array($file));
+            }
+            $dataProvider = new CArrayDataProvider($items, array('pagination' => FALSE));
+            $otherDataProvider = new CArrayDataProvider($other, array('pagination' => FALSE));
+            $this->render('index', array(
+                'model'        => new Files,
+                'request_id'   => $this->model->id,
+                'dataProvider' => $dataProvider,
+                'other'        => $otherDataProvider,
+            ));
+        }
+    }
 }

@@ -6,7 +6,8 @@ class UsersController extends BaseController
      * @var string the default layout for the views. Defaults to '//layouts/column2', meaning
      * using two-column layout. See 'protected/views/layouts/column2.php'.
      */
-    public $layout = '//layouts/column2';
+    public $layout = '/layouts/column2';
+    public $defaultAction = 'admin';
 
     /**
      * @return array action filters
@@ -15,7 +16,8 @@ class UsersController extends BaseController
     {
         return array(
             'accessControl', // perform access control for CRUD operations
-            'postOnly + delete', // we only allow deletion via POST request
+            'postOnly + delete, rolesForOrganization', // we only allow deletion via POST request
+            'ajaxOnly +rolesForOrganization',
         );
     }
 
@@ -29,11 +31,15 @@ class UsersController extends BaseController
         return array(
             array('allow', // allow all users to perform 'index' and 'view' actions
                 'actions' => array('view'),
-                'users' => array('@'),
+                'users'   => array('@'),
+            ),
+            array('allow',
+                'actions'    => array('rolesForOrganization'),
+                'expression' => 'Yii::app()->user->isAdmin()',
             ),
             array('allow', // allow authenticated user to perform 'create' and 'update' actions
-                'actions' => array('create', 'update', 'delete', 'index'),
-                'roles' => array(Users::ROLE_ADMIN, Users::ROLE_BANK_ADMIN, Users::ROLE_AGENT_ADMIN),
+                'actions' => array('create', 'update', 'delete', 'admin'),
+                'roles'   => array(Users::ROLE_ADMIN, Users::ROLE_BANK_ADMIN, Users::ROLE_AGENT_ADMIN),
             ),
             array('deny', // deny all users
                 'users' => array('*'),
@@ -41,8 +47,51 @@ class UsersController extends BaseController
         );
     }
 
+    public function actionRolesForOrganization()
+    {
+        $organizationId = (int)$_POST['Users']['organization_id'];
+
+        if (!$organizationId) {
+            echo CJSON::encode(array(
+                'no' => TRUE
+            ));
+            Yii::app()->end();
+        }
+        $organization = Organizations::model()->findByPk($organizationId);
+        if (is_null($organization))
+            Yii::app()->end(404);
+        $roles = $this->getRoles($organization->type);
+        $options = '';
+        foreach ($roles as $id => $role) {
+            $options .= CHtml::tag('option', array('value' => $id), $role, TRUE);
+        }
+        echo CJSON::encode(array(
+            'roles' => $options
+        ));
+        Yii::app()->end();
+    }
+
+    public function getRoles($organizationType = NULL)
+    {
+        switch ($organizationType ? $organizationType : Yii::app()->user->organizationType) {
+            case Organizations::TYPE_ADMIN:
+                $roles = CHtml::listData(Roles::model()->findAllByAttributes(array('organizationType' => Organizations::TYPE_ADMIN)), 'id', 'title');
+                break;
+            case Organizations::TYPE_AGENT:
+                $roles = CHtml::listData(Roles::model()->findAllByAttributes(array('organizationType' => Organizations::TYPE_AGENT)), 'id', 'title');
+                break;
+            case Organizations::TYPE_BANK:
+                $roles = CHtml::listData(Roles::model()->findAllByAttributes(array('organizationType' => Organizations::TYPE_BANK)), 'id', 'title');
+                break;
+            default:
+                $roles = array();
+        }
+        return $roles;
+    }
+
     /**
      * Displays a particular model.
+     *
      * @param integer $id the ID of the model to be displayed
      */
     public function actionView($id)
@@ -61,12 +110,14 @@ class UsersController extends BaseController
         $model = new Users('register');
 
         // Uncomment the following line if AJAX validation is needed
-         $this->performAjaxValidation($model);
+        $this->performAjaxValidation($model);
 
         if (isset($_POST['Users'])) {
             $model->attributes = $_POST['Users'];
-            if ($model->save())
+            if ($model->save()) {
+                Yii::app()->user->setFlash('success', "Пользователь {$model->phio} успешно добавлен.");
                 $this->redirect(array('view', 'id' => $model->id));
+            }
         }
 
         $this->render('create', array(
@@ -77,19 +128,30 @@ class UsersController extends BaseController
     /**
      * Updates a particular model.
      * If update is successful, the browser will be redirected to the 'view' page.
+     *
      * @param integer $id the ID of the model to be updated
      */
     public function actionUpdate($id)
     {
         $model = $this->loadModel($id);
+        $oldPassword = $model->password;
+        $model->password = '';
 
         // Uncomment the following line if AJAX validation is needed
-        // $this->performAjaxValidation($model);
+        $this->performAjaxValidation($model);
 
         if (isset($_POST['Users'])) {
             $model->attributes = $_POST['Users'];
-            if ($model->save())
+            if (empty($model->password)) {
+                $model->password = $oldPassword;
+                $model->password_changed = FALSE;
+            } else {
+                $model->password_changed = TRUE;
+            }
+            if ($model->save()) {
+                Yii::app()->user->setFlash('success', "Пользователь {$model->phio} успешно отредактирован.");
                 $this->redirect(array('view', 'id' => $model->id));
+            }
         }
 
         $this->render('update', array(
@@ -100,44 +162,28 @@ class UsersController extends BaseController
     /**
      * Deletes a particular model.
      * If deletion is successful, the browser will be redirected to the 'admin' page.
+     *
      * @param integer $id the ID of the model to be deleted
      */
     public function actionDelete($id)
     {
-        $this->loadModel($id)->delete();
-
+        $model = $this->loadModel($id);
+        if ($model->id == Yii::app()->user->id)
+            throw new CHttpException(403, 'Невозможно удалить свою учетную запись');
+        $model->delete();
         // if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
         if (!isset($_GET['ajax']))
             $this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('admin'));
     }
 
-    /**
-     * Lists all models.
-     */
-    public function actionIndex()
-    {
-//        Yii::app()->cache->flush();
-        $model = Users::model()->with('organization');
-        $model->scenario = 'search';
-        $model->unsetAttributes(); // clear any default values
-        if (isset($_GET['Users']))
-            $model->attributes = $_GET['Users'];
-
-        $this->render('admin', array(
-            'model' => $model,
-        ));
-        /*$dataProvider=new CActiveDataProvider('Users');
-        $this->render('index',array(
-            'dataProvider'=>$dataProvider,
-        ));*/
-    }
 
     /**
      * Manages all models.
      */
     public function actionAdmin()
     {
-        $model = new Users('search');
+        $model = Users::model()->with('organization');
+        $model->scenario = 'search';
         $model->unsetAttributes(); // clear any default values
         if (isset($_GET['Users']))
             $model->attributes = $_GET['Users'];
@@ -150,7 +196,9 @@ class UsersController extends BaseController
     /**
      * Returns the data model based on the primary key given in the GET variable.
      * If the data model is not found, an HTTP exception will be raised.
+     *
      * @param integer $id the ID of the model to be loaded
+     *
      * @return Users the loaded model
      * @throws CHttpException
      */
@@ -164,6 +212,7 @@ class UsersController extends BaseController
 
     /**
      * Performs the AJAX validation.
+     *
      * @param Users $model the model to be validated
      */
     protected function performAjaxValidation($model)

@@ -2,6 +2,7 @@
 
 class DefaultController extends BaseController
 {
+
     /**
      * @var string the default layout for the views. Defaults to '//layouts/column2', meaning
      * using two-column layout. See 'protected/views/layouts/column2.php'.
@@ -10,14 +11,16 @@ class DefaultController extends BaseController
     public $documentsModel;
     public $availableToConsider = TRUE;
 
-    public function setAvailableToConsider($availableToConsider)
+    public function actionFile($id)
     {
-        $this->availableToConsider = $availableToConsider;
-    }
-
-    public function getAvailableToConsider()
-    {
-        return $this->availableToConsider;
+        $this->disableProfilers();
+        $model = CommentsFiles::model()->with('comment')->findByPk($id);
+        $request = $this->loadModel($model->comment->request_id);
+        $file = Yii::getPathOfAlias($model->savePath) . DIRECTORY_SEPARATOR . $model->file;
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        Yii::app()->request->sendFile($model->name, file_get_contents($file));
     }
 
     public function setDocumentsModel($documentsModel)

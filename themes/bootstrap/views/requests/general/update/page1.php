@@ -43,11 +43,11 @@
 
 <?php echo $form->textFieldRow($model, 'registration_area', array('class' => 'span5', 'maxlength' => 255)); ?>
 
+<?php echo $form->textFieldRow($model, 'registration_city', array('class' => 'span5', 'maxlength' => 255)); ?>
+
 <?php echo $form->textFieldRow($model, 'registration_edge', array('class' => 'span5', 'maxlength' => 255)); ?>
 
-<?php echo $form->textFieldRow($model, 'registration_setllement', array('class' => 'span5', 'maxlength' => 255)); ?>
-
-<?php echo $form->textFieldRow($model, 'registration_city', array('class' => 'span5', 'maxlength' => 255)); ?>
+<?php echo $form->textFieldRow($model, 'registration_settlement', array('class' => 'span5', 'maxlength' => 255)); ?>
 
 <?php echo $form->textFieldRow($model, 'registration_street', array('class' => 'span5', 'maxlength' => 255)); ?>
 
@@ -61,15 +61,17 @@
 
 <h4>Адрес фактического проживания</h4>
 
-<?php echo $form->textFieldRow($model, 'live_index', array('class' => 'span5')); ?>
+<?php echo $form->textFieldRow($model, 'live_index', array('class' => 'span5', 'maxlength'=>6)); ?>
 
 <?php echo $form->textFieldRow($model, 'live_country', array('class' => 'span5', 'maxlength' => 50)); ?>
 
 <?php echo $form->textFieldRow($model, 'live_area', array('class' => 'span5', 'maxlength' => 50)); ?>
 
+<?php echo $form->textFieldRow($model, 'live_city', array('class' => 'span5', 'maxlength' => 50)); ?>
+
 <?php echo $form->textFieldRow($model, 'live_edge', array('class' => 'span5', 'maxlength' => 50)); ?>
 
-<?php echo $form->textFieldRow($model, 'live_city', array('class' => 'span5', 'maxlength' => 50)); ?>
+<?php echo $form->textFieldRow($model, 'live_street', array('class' => 'span5', 'maxlength' => 50)); ?>
 
 <?php echo $form->textFieldRow($model, 'live_settlement', array('class' => 'span5', 'maxlength' => 50)); ?>
 

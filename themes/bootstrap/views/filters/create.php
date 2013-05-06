@@ -2,17 +2,15 @@
 /* @var $this FiltersController */
 /* @var $model Filters */
 
-$this->breadcrumbs=array(
-	'Filters'=>array('index'),
-	'Create',
+$this->breadcrumbs = array(
+    'Фильтры' => array(Yii::app()->user->isAdmin() ? 'admin' : 'index'),
+    'Новый фильтр',
 );
-
-$this->menu=array(
-	array('label'=>'List Filters', 'url'=>array('index')),
-	array('label'=>'Manage Filters', 'url'=>array('admin')),
+$this->menu = array(
+    array('label'=>'Список фильтров', 'url'=>'/filters'),
 );
 ?>
 
-<h1>Create Filters</h1>
+    <h1>Новый фильтр</h1>
 
-<?php echo $this->renderPartial('_form', array('model'=>$model)); ?>
+<?php echo $this->renderPartial('_form', array('model' => $model)); ?>

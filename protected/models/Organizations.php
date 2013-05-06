@@ -33,6 +33,27 @@ class Organizations extends CActiveRecord
         return parent::model($className);
     }
 
+    public function behaviors()
+    {
+        return array(
+            'AutoTimestampBehavior' => array(
+                'class'           => 'zii.behaviors.CTimestampBehavior',
+                'createAttribute' => 'date_created',
+                'updateAttribute' => NULL,
+            ),
+            'AutoAuthorBehavior'    => array(
+                'class'           => 'application.components.behaviors.AuthorBehavior',
+                'authorAttribute' => 'author_id',
+            ),
+        );
+    }
+
+    public function onBeforeSave($event){
+        Yii::app()->cache->delete(self::ALL_IN_ARRAY_CACHE);
+        Yii::app()->cache->delete(self::BANK_IN_ARRAY_CACHE);
+        parent::onBeforeSave($event);
+    }
+
     public function scopes()
     {
         return array(
@@ -58,16 +79,21 @@ class Organizations extends CActiveRecord
     {
         $criteria = is_null($agent) ?
             array('condition' => 'type=' . self::TYPE_AGENT) :
-            array('condition' => 'type=' . self::TYPE_AGENT.  ' AND id=' . $agent);
+            array('condition' => 'type=' . self::TYPE_AGENT . ' AND id=' . $agent);
         $this->getDbCriteria()->mergeWith($criteria);
         return $this;
+    }
+
+    public function filter($objectTypeId)
+    {
+        return Filters::model()->organization($this->id)->objectTypeId($objectTypeId)->find();
     }
 
     public static function getNameByType($type)
     {
         $type = intval($type);
         $types = array(
-            self::TYPE_ADMIN   => 'Администрация',
+            self::TYPE_ADMIN => 'Администрация',
             self::TYPE_AGENT => 'Агент',
             self::TYPE_BANK  => 'Банк',
         );
@@ -118,8 +144,8 @@ class Organizations extends CActiveRecord
         // NOTE: you should only define rules for those attributes that
         // will receive user inputs.
         return array(
-            array('type', 'numerical', 'integerOnly' => TRUE),
-            array('name', 'length', 'max' => 255),
+            array('type', 'in', 'range' => array(Organizations::TYPE_ADMIN, Organizations::TYPE_AGENT, Organizations::TYPE_BANK), 'allowEmpty'=>FALSE),
+            array('name', 'length', 'max' => 255, 'min' => 2),
             // The following rule is used by search().
             // Please remove those attributes that should not be searched.
             array('type, name', 'safe', 'on' => 'search'),
@@ -137,6 +163,7 @@ class Organizations extends CActiveRecord
             'comments' => array(self::HAS_MANY, 'Comments', 'organization_id'),
             'filters'  => array(self::HAS_MANY, 'Filters', 'organization_id'),
             'users'    => array(self::HAS_MANY, 'Users', 'organization_id'),
+            'author'   => array(self::BELONGS_TO, 'Users', 'author_id'),
         );
     }
 
@@ -146,9 +173,11 @@ class Organizations extends CActiveRecord
     public function attributeLabels()
     {
         return array(
-            'id'   => 'ID',
-            'type' => 'Тип организации',
-            'name' => 'Название организации',
+            'id'           => 'ID',
+            'type'         => 'Тип организации',
+            'name'         => 'Название организации',
+            'date_created' => 'Дата создания',
+            'author_id'    => 'Кто создал',
         );
     }
 
@@ -168,8 +197,12 @@ class Organizations extends CActiveRecord
             $criteria->compare('type', $this->type);
         $criteria->compare('name', $this->name, TRUE);
 
+
         return new CActiveDataProvider($this, array(
             'criteria' => $criteria,
+            'pagination'=>array(
+                'pageSize'=>15
+            ),
         ));
     }
 }

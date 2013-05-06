@@ -6,62 +6,40 @@
  * Time: 22:26
  * All rights are reserved
  */
-
 ?>
-    <h2>История изменения статусов:</h2>
-<? foreach ($history as $one) {?>
-    <div>
-   <? $date = new CDateFormatter('ru_ru');
-    $date = $date->formatDateTime($one->date_created, 'long', 'short');
-    ?>
-    <span>Пользователь <?=$one->author->phio?> <?=$date?></span> изменил статус заявки с
-
-    <?
-    switch ($one->old_status) {
-        case Requests::STATUS_APPROVE:
-            $type = 'success';
-            $label = 'Одобрена';
-            break;
-        case Requests::STATUS_REFUSE:
-            $type = 'important';
-            $label = 'Отклонена';
-            break;
-        case Requests::STATUS_RETRIEVE:
-            $type = 'info';
-            $label = 'Внести исправления';
-            break;
-        case Requests::STATUS_NEW:
-            $type = 'inverse';
-            $label = 'Новая заявка';
-            break;
-    }?>
-    <?
-    $this->widget('bootstrap.widgets.TbLabel', array(
-        'type'  => $type, // 'success', 'warning', 'important', 'info' or 'inverse'
-        'label' => $label,
-    ))?> на
-    <?
-    switch ($one->new_status) {
-        case Requests::STATUS_APPROVE:
-            $type = 'success';
-            $label = 'Одобрена';
-            break;
-        case Requests::STATUS_REFUSE:
-            $type = 'important';
-            $label = 'Отклонена';
-            break;
-        case Requests::STATUS_RETRIEVE:
-            $type = 'info';
-            $label = 'Внести исправления';
-            break;
-        case Requests::STATUS_NEW:
-            $type = 'inverse';
-            $label = 'Новая заявка';
-            break;
-    }?>
-    <? $this->widget('bootstrap.widgets.TbLabel', array(
-        'type'  => $type, // 'success', 'warning', 'important', 'info' or 'inverse'
-        'label' => $label,
-    ))?>
-    </div>
-<? } ?>
+<h4>История изменения статусов</h4>
+<table class='table table-striped table-history'>
+    <thead>
+    <tr>
+        <th>Дата</th>
+        <th>Изменение статуса</th>
+        <th>Подробнее</th>
+        <th>Автор</th>
+    </tr>
+    </thead>
+    <? foreach ($history as $one) { ?>
+        <?
+        $date = new CDateFormatter('ru_ru');
+        $date = $date->formatDateTime($one->date_created, 'long', 'short');
+        ?>
+        <tr>
+            <td><?= $date ?>
+            <td>
+                <?php
+                $this->widget('requests.components.widgets.StatusBadge', array(
+                    'status' => $one->old_status, // 'success', 'warning', 'important', 'info' or 'inverse'
+                ));
+                ?>
+                <i class='icon icon-arrow-right'></i>
+                <?php
+                $this->widget('requests.components.widgets.StatusBadge', array(
+                    'status' => $one->new_status, // 'success', 'warning', 'important', 'info' or 'inverse'
+                ));
+                ?>
+            </td>
+            <td><? if ($one->reason) { ?><i class='icon icon-eye-open' data-content='<?= $one->reason ?>'></i><? } ?>
+            </td>
+            <td><?= $one->author->phio ?></td>
+        </tr>
+    <? } ?>
+</table>

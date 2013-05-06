@@ -1,66 +1,81 @@
 <?php
 /* @var $this FiltersController */
 /* @var $model Filters */
-/* @var $form CActiveForm */
+/* @var $form TbActiveForm */
 ?>
-
 <div class="form">
 
-<?php $form=$this->beginWidget('CActiveForm', array(
-	'id'=>'filters-form',
-	'enableAjaxValidation'=>false,
-)); ?>
+    <?php $form = $this->beginWidget('bootstrap.widgets.TbActiveForm', array(
+        'id'                     => 'filters-form',
+        'enableAjaxValidation'   => TRUE,
+        'type'                   => 'horizontal',
+        'enableClientValidation' => FALSE,
+        'inlineErrors'           => TRUE,
+    )); ?>
 
-	<p class="note">Fields with <span class="required">*</span> are required.</p>
+    <?php echo $form->errorSummary($model); ?>
+    <? if (Yii::app()->user->isAdmin()) { ?>
 
-	<?php echo $form->errorSummary($model); ?>
+        <?php if(!$model->isNewRecord) echo $form->hiddenField($model, 'id')?>
+        <?php echo $form->dropDownListRow($model, 'organization_id', Organizations::get_banks(), array(
+            'class' => 'span5',
+            'ajax'  => array(
+                'type'     => 'POST',
+                'dataType' => 'json',
+                'url'      => Yii::app()->createAbsoluteUrl('filters/availableForOrganization'),
+                'success'  => 'function(data) {
+                    if (data.availableObjects) {
+                        $("#availableObjects").show();
+                        $("#Filters_objectTypeId").html(data.availableObjects);
+                    }
+                    else {
+                        $("#availableObjects").hide();
+                    }
+                }',
+            ))); ?>
+        <div class="control-group" id='availableObjects' <? if ($model->isNewRecord) echo "style='display: none'" ?>>
+            <?php echo $form->labelEx($model, 'objectTypeId') ?>
+            <div class="controls">
+                <?php echo $form->dropDownList($model, 'objectTypeId', $model->isNewRecord ? array() : ObjectType::getAllInArray()) ?>
+                <?php echo $form->error($model, 'objectTypeId') ?>
+            </div>
+        </div>
+    <? } else { ?>
+        <?php echo $form->dropDownListRow($model, 'objectTypeId', $model->isNewRecord ? $this->availableObjects : ObjectType::getAllInArray(), array('class' => 'span5')); ?>
+    <? } ?>
+    <div class="control-group">
+        <?php echo $form->labelEx($model, 'fee'); ?>
+        <div class="controls">
+            <div class="input-append">
+                <?php echo $form->textField($model, 'fee', array('class' => 'span5')); ?>
+                <span class="add-on text-center request-percent">%</span>
+            </div>
+            <?php echo $form->error($model, 'fee'); ?>
+        </div>
+    </div>
 
-	<div class="row">
-		<?php echo $form->labelEx($model,'organization_id'); ?>
-		<?php echo $form->textField($model,'organization_id'); ?>
-		<?php echo $form->error($model,'organization_id'); ?>
-	</div>
+    <!--    --><?php //echo $form->textFieldRow($model, 'interest_rate', array('class' => 'span5')); ?>
 
-	<div class="row">
-		<?php echo $form->labelEx($model,'fee'); ?>
-		<?php echo $form->textField($model,'fee'); ?>
-		<?php echo $form->error($model,'fee'); ?>
-	</div>
+    <?php echo $form->textFieldRow($model, 'min_summ', array('class' => 'span5')); ?>
 
-	<div class="row">
-		<?php echo $form->labelEx($model,'interest_rate'); ?>
-		<?php echo $form->textField($model,'interest_rate'); ?>
-		<?php echo $form->error($model,'interest_rate'); ?>
-	</div>
+    <?php echo $form->textFieldRow($model, 'max_summ', array('class' => 'span5')); ?>
 
-	<div class="row">
-		<?php echo $form->labelEx($model,'min_period'); ?>
-		<?php echo $form->textField($model,'min_period'); ?>
-		<?php echo $form->error($model,'min_period'); ?>
-	</div>
+    <!--    --><?php //echo $form->textFieldRow($model, 'min_period', array('class' => 'span5')); ?>
+    <!---->
+    <!--    --><?php //echo $form->textFieldRow($model, 'max_period', array('class' => 'span5')); ?>
 
-	<div class="row">
-		<?php echo $form->labelEx($model,'max_period'); ?>
-		<?php echo $form->textField($model,'max_period'); ?>
-		<?php echo $form->error($model,'max_period'); ?>
-	</div>
+    <?php echo $form->textFieldRow($model, 'min_borrower_age', array('class' => 'span5')); ?>
 
-	<div class="row">
-		<?php echo $form->labelEx($model,'min_borrower_age'); ?>
-		<?php echo $form->textField($model,'min_borrower_age'); ?>
-		<?php echo $form->error($model,'min_borrower_age'); ?>
-	</div>
+    <?php echo $form->textFieldRow($model, 'max_borrower_age', array('class' => 'span5')); ?>
 
-	<div class="row">
-		<?php echo $form->labelEx($model,'max_borrower_age'); ?>
-		<?php echo $form->textField($model,'max_borrower_age'); ?>
-		<?php echo $form->error($model,'max_borrower_age'); ?>
-	</div>
+    <div class="form-actions">
+        <?php $this->widget('bootstrap.widgets.TbButton', array(
+            'buttonType' => 'submit',
+            'type'       => 'primary',
+            'label'      => $model->isNewRecord ? 'Создать' : 'Сохранить',
+        )); ?>
+    </div>
 
-	<div class="row buttons">
-		<?php echo CHtml::submitButton($model->isNewRecord ? 'Create' : 'Save'); ?>
-	</div>
-
-<?php $this->endWidget(); ?>
+    <?php $this->endWidget(); ?>
 
 </div><!-- form -->

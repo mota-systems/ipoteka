@@ -15,11 +15,11 @@ class DateTimeFormatterBehavior extends CActiveRecordBehavior
     /**
      * @var string datetime format of input
      */
-    public $inputFormat = 'd.m.Y';
+    public $inputFormat = 'dd.MM.yyyy';
     /**
      * @var string datetime format of output
      */
-    public $outputFormat = 'Y-m-d';
+    public $outputFormat = 'yyyy-MM-dd';
 
     protected $_modelScenario;
 
@@ -27,7 +27,13 @@ class DateTimeFormatterBehavior extends CActiveRecordBehavior
 
     public function beforeValidate($event)
     {
-        if (!empty($this->attribute) AND !empty($this->inputFormat) AND !empty($this->outputFormat)) {
+        $this->factoryAttributes($this->inputFormat, $this->outputFormat);
+        parent::beforeValidate($event);
+    }
+
+    private function factoryAttributes($inputFormat, $outputFormat)
+    {
+        if (!empty($this->attribute) AND !empty($this->inputFormat) AND !empty($this->outputFormat) /* AND $this->owner->isNewRecord*/) {
             if (is_array($this->attribute)) {
                 $this->_modelScenario = $this->owner->scenario;
                 foreach ($this->attribute as $attr) {
@@ -41,26 +47,36 @@ class DateTimeFormatterBehavior extends CActiveRecordBehavior
                         if (!in_array($this->_modelScenario, $this->_formatScenario)) {
                             continue;
                         }
-                        $attr = explode(',', array_pop($attr));
+                        $attr = array_map('trim', explode(',', array_pop($attr)));
                         foreach ($attr as $one) {
-                            if (!empty($this->owner->$one))
-                                $this->owner->$one = $this->format($this->owner->$one);
+                            if (!empty($this->owner->$one)) {
+                                $this->owner->$one = $this->format($this->owner->$one, $inputFormat, $outputFormat);
+                            }
                         }
                     }
                 }
             } else {
                 $this->attribute = explode(',', $this->attribute);
                 foreach ($this->attribute as $attr) {
-                    $this->owner->$attr = $this->format($this->owner->$attr);
+                    $this->owner->$attr = $this->format($this->owner->$attr, $inputFormat, $outputFormat);
                 }
             }
         }
-        parent::beforeValidate($event);
     }
 
-    private function format($date)
+    public function afterFind($event)
     {
-        $formatter = new DateTime();
-        return $formatter->createFromFormat($this->inputFormat, $date)->format($this->outputFormat);
+        $this->factoryAttributes($this->outputFormat, $this->inputFormat);
+        parent::afterFind($event);
+    }
+
+    private function format($date, $inputFormat, $outputFormat)
+    {
+        if (CDateTimeParser::parse($date, $outputFormat))
+            return $date;
+        $parser = CDateTimeParser::parse($date, $inputFormat);
+        if ($parser === FALSE)
+            return $date;
+        return date('Y-m-d', $parser);
     }
 }

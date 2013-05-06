@@ -57,8 +57,18 @@ class Filters extends CActiveRecord
         return $this;
     }
 
-    public function checkIt($data)
+    public function onBeforeValidate($event)
     {
+//        $validators = $this->getValidatorList();
+//        $criteria = new CDbCriteria();
+//        $criteria->condition = 'organization_id=:org';
+//        if (Yii::app()->user->isAdmin())
+//            $criteria->params = array(':org' => $this->organization_id);
+//        else
+//            $criteria->params = array(':org' => Yii::app()->user->organization_id);
+//        $rule = array('objectTypeId', 'unique', 'className' => 'Filters', 'attributeName' => 'objectTypeId', 'criteria' => $criteria, 'on'=>'update');
+//        $validators->add(CValidator::createValidator($rule[1], $this, $rule[0], array_slice($rule, 2)));
+
     }
 
     /**
@@ -69,11 +79,39 @@ class Filters extends CActiveRecord
         // NOTE: you should only define rules for those attributes that
         // will receive user inputs.
         return array(
-            array('fee, interest_rate, min_period, max_period, min_borrower_age, max_borrower_age', 'numerical', 'integerOnly' => TRUE),
+            array('interest_rate, min_period, max_period, min_borrower_age, max_borrower_age, min_summ, max_summ', 'numerical', 'integerOnly' => TRUE),
+            array('objectTypeId, fee, min_summ, max_summ, min_borrower_age, max_borrower_age', 'required'),
+            array('objectTypeId', 'exist', 'className' => 'ObjectType', 'attributeName' => 'id'),
+            array('objectTypeId', 'available', 'on' => 'admin, update'),
+            array('organization_id', 'exist', 'className' => 'Organizations', 'attributeName' => 'id', 'allowEmpty' => FALSE, 'on' => 'admin'),
+            array('fee', 'numerical', 'min' => 0, 'max' => 100),
+            array('min_borrower_age', 'numerical', 'min' => 18, 'max' => 150, 'tooSmall' => 'Ипотека дается только совершеннолетним! Минимальный возраст заемщика дожен быть больше 18 лет!'),
+//            array('min_summ', 'compare', 'compareAttribute' => 'max_summ', 'operator' => '<'),
+            array('max_summ', 'compare', 'compareAttribute' => 'min_summ', 'operator' => '>'),
+//            array('min_borrower_age', 'compare', 'compareAttribute' => 'max_borrower_age', 'operator' => '<'),
+            array('max_borrower_age', 'compare', 'compareAttribute' => 'min_borrower_age', 'operator' => '>'),
+
             // The following rule is used by search().
             // Please remove those attributes that should not be searched.
-            array('organization_id, fee, interest_rate, min_period, max_period, min_borrower_age, max_borrower_age', 'safe', 'on' => 'search'),
+            array('organization_id, objectTypeId, fee, interest_rate, min_period, max_period, min_borrower_age, max_borrower_age, min_summ, max_summ', 'safe', 'on' => 'search'),
         );
+    }
+
+    public function available($attribute, $params)
+    {
+        Yii::app()->getModule('requests');
+        $exists = CHtml::listData(Filters::model()->findAllByAttributes(array('organization_id' => $this->organization_id)), $attribute, 'objectType.type');
+        $available = array_diff(ObjectType::getAllInArray(), $exists);
+        if ($this->isNewRecord) {
+            if (!array_key_exists($this->$attribute, $available))
+                $this->addError($attribute, 'Такой фильтр уже существует, выберите другой.');
+        } else {
+            $old = self::model()->findByPk($this->id);
+//            echo var_dump($available);
+//            Yii::app()->end();
+            if (!array_key_exists($this->$attribute, $available) AND $old->$attribute != $this->$attribute)
+                $this->addError($attribute, 'Такой фильтр уже существует, выберите другой.');
+        }
     }
 
     /**
@@ -85,6 +123,7 @@ class Filters extends CActiveRecord
         // class name for the relations automatically generated below.
         return array(
             'organization' => array(self::BELONGS_TO, 'Organizations', 'organization_id'),
+            'objectType'   => array(self::BELONGS_TO, 'ObjectType', 'objectTypeId')
         );
     }
 
@@ -95,13 +134,16 @@ class Filters extends CActiveRecord
     {
         return array(
             'id'               => 'ID',
+            'objectTypeId'     => 'Тип объекта',
             'organization_id'  => 'Организация',
-            'fee'              => 'Взнос',
+            'fee'              => 'П/взнос, %',
             'interest_rate'    => 'Ставка',
             'min_period'       => 'Минимальный срок',
             'max_period'       => 'Максимальный срок',
-            'min_borrower_age' => 'Минимальный возраст заемщика',
-            'max_borrower_age' => 'Максимальный возраст заемщика',
+            'min_summ'         => 'Минимальная сумма ипотеки, руб.',
+            'max_summ'         => 'Максимальная сумма ипотеки, руб.',
+            'min_borrower_age' => 'Минимальный возраст заемщика, лет',
+            'max_borrower_age' => 'Максимальный возраст заемщика, лет',
         );
     }
 
@@ -118,10 +160,14 @@ class Filters extends CActiveRecord
 
         $criteria->compare('id', $this->id);
         $criteria->compare('organization_id', $this->organization_id);
+        $criteria->compare('objectTypeId', $this->objectTypeId);
+
         $criteria->compare('fee', $this->fee);
         $criteria->compare('interest_rate', $this->interest_rate);
         $criteria->compare('min_period', $this->min_period);
         $criteria->compare('max_period', $this->max_period);
+        $criteria->compare('min_summ', $this->min_summ);
+        $criteria->compare('max_summ', $this->max_summ);
         $criteria->compare('min_borrower_age', $this->min_borrower_age);
         $criteria->compare('max_borrower_age', $this->max_borrower_age);
 

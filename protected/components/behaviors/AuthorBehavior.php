@@ -9,13 +9,18 @@
 class AuthorBehavior extends CActiveRecordBehavior
 {
     public $authorAttribute = 'author_id';
+    public $organizationAttribute;
     public $overwrite = FALSE;
 
-    public function beforeSave($event)
+    public function beforeValidate($event)
     {
-        if (($this->getOwner()->getIsNewRecord() OR $this->overwrite)&& ($this->authorAttribute !== NULL)) {
+        if(empty($this->authorAttribute))
+            throw new Exception('Не указан атрибут, куда записывать ID автора.');
+        if ($this->getOwner()->getIsNewRecord() OR $this->overwrite) {
             $this->owner->{$this->authorAttribute} = Yii::app()->user->id;
+            if(!empty($this->organizationAttribute))
+                $this->owner->{$this->organizationAttribute} = Yii::app()->user->organization_id;
         }
-
+        parent::beforeSave($event);
     }
 }

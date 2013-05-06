@@ -29,7 +29,7 @@
 		<?php $this->widget('bootstrap.widgets.TbButton', array(
             'buttonType'=>'submit',
             'type'=>'primary',
-            'label'=>'Login',
+            'label'=>'Войти',
         )); ?>
 	</div>
 

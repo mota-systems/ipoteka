@@ -25,7 +25,6 @@ class CreateAction extends CAction
 
         $this->controller->render('/general/create', array(
             'model' => $model,
-            'banks' => 0
         ));
     }
 

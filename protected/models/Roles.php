@@ -17,6 +17,11 @@ class Roles extends CActiveRecord
     const TYPE_ADMIN = 0;
     const TYPE_AGENT = 1;
     const TYPE_BANK = 2;
+    const ROLE_ADMIN = 2;
+    const ROLE_BANK_ADMIN = 3;
+    const ROLE_BANK_MANAGER = 4;
+    const ROLE_AGENT_ADMIN = 5;
+    const ROLE_AGENT_MANAGER = 6;
 
     /**
      * Returns the static model of the specified AR class.

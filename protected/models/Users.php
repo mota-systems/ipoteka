@@ -20,13 +20,13 @@
  */
 class Users extends CActiveRecord
 {
-    const ROLE_GUEST = 'guest';
     const ROLE_AGENT_MANAGER = 'agentManager';
     const ROLE_AGENT_ADMIN = 'agentAdmin';
     const ROLE_BANK_MANAGER = 'bankManager';
     const ROLE_BANK_ADMIN = 'bankAdmin';
     const ROLE_ADMIN = 'admin';
     public $password_repeat;
+    public $password_changed;
 
     /**
      * Returns the static model of the specified AR class.
@@ -45,13 +45,15 @@ class Users extends CActiveRecord
         return $this->roles->name;
     }
 
-    public function organization($org_id){
+    public function organization($org_id)
+    {
         $this->getDbCriteria()->mergeWith(array(
-            'condition'=>'organization_id=:org_id',
-            'params'=>array(':org_id'=>$org_id),
+            'condition' => 'organization_id=:org_id',
+            'params'    => array(':org_id' => $org_id),
         ));
         return $this;
     }
+
 
     /**
      * @return string the associated database table name
@@ -67,41 +69,67 @@ class Users extends CActiveRecord
             'AutoTimestampBehavior' => array(
                 'class'           => 'zii.behaviors.CTimestampBehavior',
                 'createAttribute' => 'date_created',
+                'updateAttribute' => NULL,
             ),
-           /* 'AutoUpperCase'         => array(
-                'class'     => 'application.components.behaviors.UpperCaseBehavior',
-                'attribute' => array('phio')
-            ),*/
+            /* 'AutoUpperCase'         => array(
+                 'class'     => 'application.components.behaviors.UpperCaseBehavior',
+                 'attribute' => array('phio')
+             ),*/
         );
     }
 
+    public function onBeforeValidate($event)
+    {
+        if ($this->scenario == 'register') {
+            if (Yii::app()->user->isAdmin()) {
+                $org = Organizations::model()->findByPk($this->organization_id);
+                if (is_null($org))
+                    throw new CHttpException(404, 'Такой организации не существует');
+                $type = $org->type;
+            } else {
+                $this->organization_id = Yii::app()->user->organization_id;
+                $type = Yii::app()->user->organizationType;
+            }
+            switch ($type) {
+                case (Organizations::TYPE_ADMIN):
+                    $rule = array('roleId', 'in', 'range' => array(Roles::ROLE_ADMIN));
+                    break;
+                case (Organizations::TYPE_AGENT):
+                    $rule = array('roleId', 'in', 'range' => array(Roles::ROLE_AGENT_ADMIN, Roles::ROLE_AGENT_MANAGER));
+                    break;
+                case (Organizations::TYPE_BANK):
+                    $rule = array('roleId', 'in', 'range' => array(Roles::ROLE_BANK_ADMIN, Roles::ROLE_BANK_MANAGER));
+                    break;
+                default:
+                    $rule = array('roleId', 'in', 'range' => array());
+                    break;
+            }
+            $validators = $this->validatorList;
+            $validators->add(CValidator::createValidator($rule[1], $this, $rule[0], array_slice($rule, 2)));
+        }
+        if (Yii::app()->user->isAdmin()) {
+            $rule = array('organization_id', 'exists', 'allowEmpty' => FALSE, 'className' => 'Organizations', 'attributeName' => 'id');
+            $this->validatorList->add(CValidator::createValidator($rule[1], $this, $rule[0], array_slice($rule, 2)));
+        }
+        parent::onBeforeValidate($event);
+    }
 
     /**
      * @return array validation rules for model attributes.
      */
     public function rules()
     {
-        switch (Yii::app()->user->roleId) {
-            case (Users::ROLE_ADMIN):
 
-                break;
-            case (Users::ROLE_AGENT_ADMIN):
-                break;
-            case (Users::ROLE_BANK_ADMIN):
-                break;
-            default:
-                break;
-        }
         // NOTE: you should only define rules for those attributes that
         // will receive user inputs.
         return array(
-            array('organization_id', 'numerical', 'integerOnly' => TRUE),
-            array('organization_id', 'exists', 'allowEmpty' => FALSE, 'className' => 'Organizations', 'attributeName' => 'id'),
             array('roleId', 'exists', 'allowEmpty' => FALSE, 'className' => 'Roles', 'attributeName' => 'id'),
             array('username', 'unique', 'allowEmpty' => FALSE, 'className' => 'Users', 'attributeName' => 'username', 'caseSensitive' => FALSE),
             array('username', 'FullAlphaValidator'),
             array('username', 'length', 'min' => 4, 'max' => 15, 'tooShort' => '{attribute} слишком короткое. Минимум - 5 символов', 'tooLong' => '{attribute} слишком длинное. Максимум - 15 символов'),
-            array('organization_id, username, password, phio', 'required'),
+            array('organization_id, username, phio', 'required'),
+            array('password', 'required', 'on'=>'insert'),
+            array('password', 'length', 'min'=>4,'max'=>30, 'on'=>'update'),
 //            array('password_repeat', 'required', 'on' => 'register'),
 //            array('password', 'compare', 'compareAttribute'=>'password_repeat', 'on' => 'register'),
             array('phio', 'length', 'max' => 255),
@@ -140,16 +168,17 @@ class Users extends CActiveRecord
             'phio'            => 'ФИО',
             'work_phone'      => 'Стационарный телефон',
             'mobile_phone'    => 'Мобильный телефон',
-            'roleId'          => 'Права'
+            'roleId'          => 'Права',
+            'date_created'    => 'Дата создания',
         );
     }
 
-    public function onBeforeSave()
+    public function onBeforeSave($event)
     {
-        $this->password = crypt($this->password, UserIdentity::$salt);
+        if ($this->isNewRecord OR $this->password_changed)
+            $this->password = crypt($this->password, UserIdentity::$salt);
+        parent::onBeforeSave($event);
     }
-
-    //TODO: сделать что-то с паролем чтобы он не ебал мозг при редактировании
 
     /**
      * Retrieves a list of models based on the current search/filter conditions.

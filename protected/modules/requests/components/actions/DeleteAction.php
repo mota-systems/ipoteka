@@ -14,7 +14,20 @@ class DeleteAction extends CAction
     {
         if(!Yii::app()->user->checkAccess('deleteRequest'))
             throw new CHttpException(403, 'У вас нет прав для удаления заявки.');
-        $this->controller->loadModel($id)->delete();
+        $model=$this->controller->loadModel($id);
+        foreach($model->statusHistory as $one){
+            $one->delete();
+        }
+        foreach($model->comments as $one){
+            $one->delete();
+        }
+        foreach($model->decisions as $one){
+            $one->delete();
+        }
+        foreach($model->files as $one){
+            $one->delete();
+        }
+        $model->delete();
 
         // if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
         if (!isset($_GET['ajax']))

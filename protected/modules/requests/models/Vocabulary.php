@@ -11,6 +11,7 @@
  */
 class Vocabulary extends CActiveRecord
 {
+    const VOCABULARY_CACHE_KEY = 'vocabulary';
     /**
      * Returns the static model of the specified AR class.
      *
@@ -31,6 +32,23 @@ class Vocabulary extends CActiveRecord
         );
     }
 
+    public static function getTitle($id){
+        if(!$cache=Yii::app()->cache->get(self::VOCABULARY_CACHE_KEY)){
+            $cache = Yii::app()->cache->set(self::VOCABULARY_CACHE_KEY, CHtml::listData(self::model()->findAll(), 'id', 'title'));
+        }
+//        $title = self::model()->findByPk($id)->title;
+        return $cache[$id];
+//        $e = 'utf8';
+//        $string = mb_strtolower($title, $e);
+//        $upper = mb_strtoupper($string, $e);
+//        preg_match('#(.)#us', $upper, $matches);
+//        return $matches[1] . mb_substr($string, 1, mb_strlen($string, $e), $e);
+    }
+
+    public static function getSex($id){
+        return $id==1 ? 'Мужчина' : 'Женщина';
+    }
+
     /**
      * @return string the associated database table name
      */
@@ -47,6 +65,7 @@ class Vocabulary extends CActiveRecord
         ));
         return $this;
     }
+
 
     public function column($col)
     {

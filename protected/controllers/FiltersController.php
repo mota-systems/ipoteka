@@ -2,172 +2,229 @@
 
 class FiltersController extends BaseController
 {
-	/**
-	 * @var string the default layout for the views. Defaults to '//layouts/column2', meaning
-	 * using two-column layout. See 'protected/views/layouts/column2.php'.
-	 */
-	public $layout='//layouts/column2';
 
-	/**
-	 * @return array action filters
-	 */
-	public function filters()
-	{
-		return array(
-			'accessControl', // perform access control for CRUD operations
-			'postOnly + delete', // we only allow deletion via POST request
-		);
-	}
+    public $layout = '/layouts/column2';
 
-	/**
-	 * Specifies the access control rules.
-	 * This method is used by the 'accessControl' filter.
-	 * @return array access control rules
-	 */
-	public function accessRules()
-	{
-		return array(
-			array('allow',  // allow all users to perform 'index' and 'view' actions
-				'actions'=>array('index','view'),
-				'users'=>array('*'),
-			),
-			array('allow', // allow authenticated user to perform 'create' and 'update' actions
-				'actions'=>array('create','update'),
-				'users'=>array('@'),
-			),
-			array('allow', // allow admin user to perform 'admin' and 'delete' actions
-				'actions'=>array('admin','delete'),
-				'users'=>array('admin'),
-			),
-			array('deny',  // deny all users
-				'users'=>array('*'),
-			),
-		);
-	}
+    public function init()
+    {
+        $this->defaultAction = Yii::app()->user->isAdmin() ? 'admin' : 'index';
+        Yii::app()->getModule('requests');
+    }
 
-	/**
-	 * Displays a particular model.
-	 * @param integer $id the ID of the model to be displayed
-	 */
-	public function actionView($id)
-	{
-		$this->render('view',array(
-			'model'=>$this->loadModel($id),
-		));
-	}
+    public function filters()
+    {
+        return array(
+            'accessControl',
+            'postOnly +delete, availableForOrganization',
+            'ajaxOnly +availableForOrganization',
+        );
+    }
 
-	/**
-	 * Creates a new model.
-	 * If creation is successful, the browser will be redirected to the 'view' page.
-	 */
-	public function actionCreate()
-	{
-		$model=new Filters;
+    public function accessRules()
+    {
+        return array(
+            array('allow',
+                'expression' => "Yii::app()->user->isAdmin()",
+            ),
+            array('allow',
+                'actions'    => array('create', 'update', 'index', 'delete'),
+                'expression' => "Yii::app()->user->checkAccess('editFilter')",
+            ),
+            array('deny',
+                'users' => array('*'),
+            )
+        );
+    }
 
-		// Uncomment the following line if AJAX validation is needed
-		// $this->performAjaxValidation($model);
+    public function actionAvailableForOrganization()
+    {
+        $organizationId = (int)$_POST['Filters']['organization_id'];
+        $oldFilter = FALSE;
+        if (isset($_POST['Filters']['id'])) {
+            if (intval($id = $_POST['Filters']['id']))
+                $oldFilter = Filters::model()->findByPk($id);
+        }
+        if (!$organizationId) {
+            echo CJSON::encode(array(
+                'no' => TRUE
+            ));
+            Yii::app()->end();
+        }
 
-		if(isset($_POST['Filters']))
-		{
-			$model->attributes=$_POST['Filters'];
-			if($model->save())
-				$this->redirect(array('view','id'=>$model->id));
-		}
+        $exists = CHtml::listData(Filters::model()->findAll('organization_id=:org_id',
+            array(':org_id' => $organizationId)), 'objectTypeId', 'objectType.type');
+        $data = array_diff_key(ObjectType::getAllInArray(), $exists);
+        if ($oldFilter) {
+            if ($oldFilter->organization_id == $organizationId)
+                $data[$oldFilter->objectTypeId] = $oldFilter->objectType->type;
 
-		$this->render('create',array(
-			'model'=>$model,
-		));
-	}
+        }
+        $availableObjects = '';
 
-	/**
-	 * Updates a particular model.
-	 * If update is successful, the browser will be redirected to the 'view' page.
-	 * @param integer $id the ID of the model to be updated
-	 */
-	public function actionUpdate($id)
-	{
-		$model=$this->loadModel($id);
+        foreach ($data as $value => $name) {
+            $availableObjects .= CHtml::tag('option', array('value' => $value), CHtml::encode($name), TRUE);
+        }
 
-		// Uncomment the following line if AJAX validation is needed
-		// $this->performAjaxValidation($model);
+        echo CJSON::encode(array(
+            'availableObjects' => $availableObjects
+        ));
+        Yii::app()->end();
+    }
 
-		if(isset($_POST['Filters']))
-		{
-			$model->attributes=$_POST['Filters'];
-			if($model->save())
-				$this->redirect(array('view','id'=>$model->id));
-		}
+    public function getAvailableObjects()
+    {
+        Yii::app()->getModule('requests');
+        $exists = CHtml::listData(Filters::model()->findAllByAttributes(array('organization_id' => Yii::app()->user->organization_id)), 'objectTypeId', 'objectType.type');
+        return array_diff(ObjectType::getAllInArray(), $exists);
+    }
 
-		$this->render('update',array(
-			'model'=>$model,
-		));
-	}
+    /**
+     * Displays a particular model.
+     *
+     * @param integer $id the ID of the model to be displayed
+     */
+    public function actionView($id)
+    {
+        $this->render('view', array(
+            'model' => $this->loadModel($id),
+        ));
+    }
 
-	/**
-	 * Deletes a particular model.
-	 * If deletion is successful, the browser will be redirected to the 'admin' page.
-	 * @param integer $id the ID of the model to be deleted
-	 */
-	public function actionDelete($id)
-	{
-		$this->loadModel($id)->delete();
+    /**
+     * Creates a new model.
+     * If creation is successful, the browser will be redirected to the 'view' page.
+     */
+    public function actionCreate()
+    {
+        $scenario = Yii::app()->user->isAdmin() ? 'admin' : 'insert';
+        $model = new Filters($scenario);
+        $model->unsetAttributes();
+        // Uncomment the following line if AJAX validation is needed
+        $this->performAjaxValidation($model);
 
-		// if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
-		if(!isset($_GET['ajax']))
-			$this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('admin'));
-	}
+        if (isset($_POST['Filters'])) {
+            $model->attributes = $_POST['Filters'];
+            if (!Yii::app()->user->isAdmin())
+                $model->organization_id = Yii::app()->user->organization_id;
+            if ($model->save()) {
+                Yii::app()->user->setFlash('success', 'Фильтр успешно создан.');
+                $this->redirect(array($this->defaultAction));
+            }
+        }
 
-	/**
-	 * Lists all models.
-	 */
-	public function actionIndex()
-	{
-		$dataProvider=new CActiveDataProvider('Filters');
-		$this->render('index',array(
-			'dataProvider'=>$dataProvider,
-		));
-	}
+        $this->render('create', array(
+            'model' => $model,
+        ));
+    }
 
-	/**
-	 * Manages all models.
-	 */
-	public function actionAdmin()
-	{
-		$model=new Filters('search');
-		$model->unsetAttributes();  // clear any default values
-		if(isset($_GET['Filters']))
-			$model->attributes=$_GET['Filters'];
+    /**
+     * Updates a particular model.
+     * If update is successful, the browser will be redirected to the 'view' page.
+     *
+     * @param integer $id the ID of the model to be updated
+     */
+    public function actionUpdate($id)
+    {
+        $model = $this->loadModel($id);
+        $model->scenario = Yii::app()->user->isAdmin() ? 'admin' : 'insert';
+        // Uncomment the following line if AJAX validation is needed
+        $this->performAjaxValidation($model);
 
-		$this->render('admin',array(
-			'model'=>$model,
-		));
-	}
+        if (isset($_POST['Filters'])) {
+            $model->attributes = $_POST['Filters'];
+            if ($model->save()) {
+                Yii::app()->user->setFlash('success', 'Фильтр успешно отредактирован.');
+                $this->redirect(array($this->defaultAction));
+            }
+        }
 
-	/**
-	 * Returns the data model based on the primary key given in the GET variable.
-	 * If the data model is not found, an HTTP exception will be raised.
-	 * @param integer $id the ID of the model to be loaded
-	 * @return Filters the loaded model
-	 * @throws CHttpException
-	 */
-	public function loadModel($id)
-	{
-		$model=Filters::model()->findByPk($id);
-		if($model===null)
-			throw new CHttpException(404,'The requested page does not exist.');
-		return $model;
-	}
+        $this->render('update', array(
+            'model' => $model,
+        ));
+    }
 
-	/**
-	 * Performs the AJAX validation.
-	 * @param Filters $model the model to be validated
-	 */
-	protected function performAjaxValidation($model)
-	{
-		if(isset($_POST['ajax']) && $_POST['ajax']==='filters-form')
-		{
-			echo CActiveForm::validate($model);
-			Yii::app()->end();
-		}
-	}
+    /**
+     * Deletes a particular model.
+     * If deletion is successful, the browser will be redirected to the 'admin' page.
+     *
+     * @param integer $id the ID of the model to be deleted
+     */
+    public function actionDelete($id)
+    {
+        $this->loadModel($id)->delete();
+            Yii::app()->user->setFlash('success', 'Фильтр успешно удален');
+
+        // if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
+        if(Yii::app()->request->isAjaxRequest){
+            Yii::app()->end();
+        }
+        if (!isset($_GET['ajax'])) {
+            $this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('admin'));
+        }
+    }
+
+    /**
+     * Lists all models.
+     */
+    public function actionIndex()
+    {
+        if (Yii::app()->user->organizationType == Organizations::TYPE_BANK) {
+            $criteria = array(
+                'criteria' => array(
+                    'condition' => 'organization_id=' . Yii::app()->user->organization_id
+                ),
+            );
+        } else {
+            $criteria = array();
+        }
+        $dataProvider = new CActiveDataProvider('Filters', $criteria);
+        $this->render('index', array(
+            'dataProvider' => $dataProvider,
+        ));
+    }
+
+    /**
+     * Manages all models.
+     */
+    public function actionAdmin()
+    {
+        $model = new Filters('search');
+        $model->unsetAttributes(); // clear any default values
+        if (isset($_GET['Filters']))
+            $model->attributes = $_GET['Filters'];
+
+        $this->render('admin', array(
+            'model' => $model,
+        ));
+    }
+
+    /**
+     * Returns the data model based on the primary key given in the GET variable.
+     * If the data model is not found, an HTTP exception will be raised.
+     *
+     * @param integer $id the ID of the model to be loaded
+     *
+     * @return Filters the loaded model
+     * @throws CHttpException
+     */
+    public function loadModel($id)
+    {
+        $model = Filters::model()->with('objectType')->findByPk($id);
+        if ($model === NULL)
+            throw new CHttpException(404, 'Такой страницы не существует.');
+        return $model;
+    }
+
+    /**
+     * Performs the AJAX validation.
+     *
+     * @param Filters $model the model to be validated
+     */
+    protected function performAjaxValidation($model)
+    {
+        if (isset($_POST['ajax']) && $_POST['ajax'] === 'filters-form') {
+            echo CActiveForm::validate($model);
+            Yii::app()->end();
+        }
+    }
 }
